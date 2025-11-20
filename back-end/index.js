@@ -1,4 +1,63 @@
-let users = [
+require('dotenv').config()
+const express = require('express');
+const { MongoClient } = require('mongodb');
+const cors = require('cors'); 
+const app = express();
+const path = require('path');
+app.use(cors());
+app.use(express.json());
+const port= process.env.PORT;
+const url = process.env.MONGO_URL;
+const client = new MongoClient(url);
+const { ObjectId } = require('mongodb');
+
+let db;
+let Users;
+
+// Connect to MongoDB
+async function connectDB() {
+  try {
+    const client = new MongoClient(url);
+    await client.connect();
+
+    console.log("Connected to MongoDB");
+
+    db = client.db("Voting");
+    Users = db.collection("Users");
+
+  } catch (err) {
+    console.error("Error connecting to MongoDB:", err);
+  }
+}
+
+// ====== ROUTES ======
+
+app.get("/test", (req, res) => {
+  res.send("Server is working");
+});
+
+// Example database route
+app.get("/users", async (req, res) => {
+  try {
+    const data = await Users.find().toArray();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: "DB error" });
+  }
+});
+
+// Serve frontend (if any)
+app.use(express.static(path.join(__dirname, "public")));
+
+// Start server *after* DB is connected
+connectDB().then(() => {
+  app.listen(port, () => {
+    console.log(`Server running on port ${port}`);
+  });
+});
+
+
+/*let users = [
 	{ id: 1, name: "Ines", tokens: 5, preference: "cute", baseSpeed: 3 },
 	{ id: 2, name: "Kenza", tokens: 3, preference: "boyish", baseSpeed: 2 },
 	{ id: 3, name: "Chaima", tokens: 7, preference: "horror", baseSpeed: 4 },
@@ -122,4 +181,4 @@ function showResults() {
 	});
 }
 
-document.getElementById("showResultsBtn").addEventListener("click", showResults);
+document.getElementById("showResultsBtn").addEventListener("click", showResults);*/
