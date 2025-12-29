@@ -46,11 +46,9 @@ let Users;
 	}
 }*/
 
-
-
 async function connectDB() {
 	try {
-		const client = new MongoClient(url);
+		
 		await client.connect();
 
 		console.log("Connected to MongoDB");
@@ -73,6 +71,29 @@ app.get("/users", async (req, res) => {
 	} catch (err) {
 		res.status(500).json({ error: "DB error" });
 	}
+});
+
+app.get("/users/:username", async (req, res) => {
+  const { username } = req.params;
+  console.log("User selected:", username);
+
+  try {
+    const user = await Users.findOne(
+      { username: new RegExp(`^${username}$`, "i") },
+      { projection: { password: 0 } }
+    );
+
+    if (!user) {
+      console.log("User not found:", username);
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    console.log("User found:", user.username);
+    res.json(user);
+  } catch (err) {
+    console.error("Error fetching user:", err);
+    res.status(500).json({ error: "Server error fetching user" });
+  }
 });
 
 app.use(express.static(path.join(__dirname, "public")));
@@ -100,8 +121,6 @@ app.use(express.static(path.join(__dirname, "public")));
     console.error("Error updating users:", err);
   }
 }*/
-
-
 
 connectDB().then(async () => {
 	app.listen(port, () => {
