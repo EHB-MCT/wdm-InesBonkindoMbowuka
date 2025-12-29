@@ -1,58 +1,116 @@
 <template>
-  <div class="hello">
-    <h1>{{ msg }}</h1>
-    <p>
-      For a guide and recipes on how to configure / customize this project,<br>
-      check out the
-      <a href="https://cli.vuejs.org" target="_blank" rel="noopener">vue-cli documentation</a>.
-    </p>
-    <h3>Installed CLI Plugins</h3>
-    <ul>
-      <li><a href="https://github.com/vuejs/vue-cli/tree/dev/packages/%40vue/cli-plugin-babel" target="_blank" rel="noopener">babel</a></li>
-      <li><a href="https://github.com/vuejs/vue-cli/tree/dev/packages/%40vue/cli-plugin-eslint" target="_blank" rel="noopener">eslint</a></li>
-    </ul>
-    <h3>Essential Links</h3>
-    <ul>
-      <li><a href="https://vuejs.org" target="_blank" rel="noopener">Core Docs</a></li>
-      <li><a href="https://forum.vuejs.org" target="_blank" rel="noopener">Forum</a></li>
-      <li><a href="https://chat.vuejs.org" target="_blank" rel="noopener">Community Chat</a></li>
-      <li><a href="https://twitter.com/vuejs" target="_blank" rel="noopener">Twitter</a></li>
-      <li><a href="https://news.vuejs.org" target="_blank" rel="noopener">News</a></li>
-    </ul>
-    <h3>Ecosystem</h3>
-    <ul>
-      <li><a href="https://router.vuejs.org" target="_blank" rel="noopener">vue-router</a></li>
-      <li><a href="https://vuex.vuejs.org" target="_blank" rel="noopener">vuex</a></li>
-      <li><a href="https://github.com/vuejs/vue-devtools#vue-devtools" target="_blank" rel="noopener">vue-devtools</a></li>
-      <li><a href="https://vue-loader.vuejs.org" target="_blank" rel="noopener">vue-loader</a></li>
-      <li><a href="https://github.com/vuejs/awesome-vue" target="_blank" rel="noopener">awesome-vue</a></li>
-    </ul>
+  <div class="quiz-container">
+    <h1>Quiz Simulation</h1>
+
+    <div v-for="(options, roundIndex) in roundOptions" :key="roundIndex" class="question">
+      <h2>Question {{ roundIndex + 1 }}</h2>
+
+      <div v-for="option in options" :key="option" class="option">
+        {{ option }}
+      </div>
+
+      <button @click="showResults(roundIndex)">Show Results</button>
+
+      <div class="total-tokens">
+        Total Tokens Spent: {{ totalTokens[roundIndex] || 0 }}
+      </div>
+      <div class="winning-option" v-if="winningOption[roundIndex]">
+        Winning Option: {{ winningOption[roundIndex] }}
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
 export default {
-  name: 'HelloWorld',
-  props: {
-    msg: String
+  data() {
+    return {
+      users: [], 
+      roundOptions: [
+        ["boyhood", "cutie pie", "horror maze", "summer"],
+        ["cutiness", "bright light", "boyz", "travel"],
+        ["school uniform", "boy uniform", "night horrors", "campy"],
+        ["cute dress", "bones and all", "bright room", "horror scene"]
+      ],
+      totalTokens: {},
+      winningOption: {}
+    };
+  },
+  methods: {
+    async fetchUsers() {
+      try {
+        const res = await fetch("http://localhost:5000/users");
+        this.users = await res.json();
+      } catch (err) {
+        console.error("Failed to fetch users:", err);
+      }
+    },
+    matchesPreference(user, option) {
+      const preferencePatterns = {
+        cute: /cute/i,
+        boyish: /boy/i,
+        horror: /horror/i,
+        bright: /bright/i
+      };
+      return preferencePatterns[user.preference].test(option);
+    },
+    tokensToSpend(user, option) {
+      if (this.matchesPreference(user, option)) {
+        return Math.min(user.tokens, Math.floor(Math.random() * 3) + 1);
+      } else {
+        if (Math.random() < 0.5) return 0;
+        return 1;
+      }
+    },
+    weightedChoice(user, options) {
+      let weighted = [];
+      options.forEach(opt => {
+        const weight = this.matchesPreference(user, opt) ? 5 : 1;
+        for (let i = 0; i < weight; i++) weighted.push(opt);
+      });
+      return weighted[Math.floor(Math.random() * weighted.length)];
+    },
+    showResults(roundIndex) {
+      let total = 0;
+      let votesPerOption = {};
+
+      this.users.forEach(user => {
+        if (user.tokens <= 0) return;
+
+        const choice = this.weightedChoice(user, this.roundOptions[roundIndex]);
+        const spend = this.tokensToSpend(user, choice);
+        total += spend;
+        user.tokens -= spend;
+
+        let reason = spend === 0
+          ? "User hasn't cast a vote"
+          : this.matchesPreference(user, choice)
+          ? `Preference match (${user.preference} in ${choice})`
+          : "Voted randomly";
+
+        if (spend === 0) {
+          console.log(`Round ${roundIndex + 1} | ${user.username} hasn't cast a vote`);
+        } else {
+          console.log(
+            `Round ${roundIndex + 1} | ${user.username} voted for "${choice}" | Tokens: ${spend} | Reason: ${reason}`
+          );
+        }
+
+        if (!votesPerOption[choice]) votesPerOption[choice] = 0;
+        votesPerOption[choice] += spend;
+      });
+
+      const sortedOptions = Object.entries(votesPerOption).sort((a, b) => b[1] - a[1]);
+      const winner = sortedOptions.length ? sortedOptions[0][0] : null;
+
+      this.totalTokens = { ...this.totalTokens, [roundIndex]: total };
+      this.winningOption = { ...this.winningOption, [roundIndex]: winner };
+    }
+  },
+  mounted() {
+    this.fetchUsers();
   }
-}
+};
 </script>
 
-<!-- Add "scoped" attribute to limit CSS to this component only -->
-<style scoped>
-h3 {
-  margin: 40px 0 0;
-}
-ul {
-  list-style-type: none;
-  padding: 0;
-}
-li {
-  display: inline-block;
-  margin: 0 10px;
-}
-a {
-  color: #42b983;
-}
-</style>
+
