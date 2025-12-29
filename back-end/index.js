@@ -46,6 +46,8 @@ let Users;
 	}
 }*/
 
+
+
 async function connectDB() {
 	try {
 		const client = new MongoClient(url);
@@ -75,9 +77,36 @@ app.get("/users", async (req, res) => {
 
 app.use(express.static(path.join(__dirname, "public")));
 
+/*async function updateUsers() {
+  try {
+    if (!Users) throw new Error("Users collection not initialized");
+
+    const allUsers = await Users.find().toArray();
+
+    for (const user of allUsers) {
+      const update = {};
+
+      if (user.money === undefined) update.money = Math.floor(Math.random() * 50) + 20;
+      if (user.spendingProbability === undefined) update.spendingProbability = +(Math.random() * 0.5 + 0.25).toFixed(2);
+      if (user.VotedFor === undefined) update.VotedFor = [];
+
+      if (Object.keys(update).length > 0) {
+        await Users.updateOne({ _id: user._id }, { $set: update });
+      }
+    }
+
+    console.log("All users updated with new fields where necessary");
+  } catch (err) {
+    console.error("Error updating users:", err);
+  }
+}*/
+
+
+
 connectDB().then(async () => {
 	app.listen(port, () => {
 		console.log(`Server running on port ${port}`);
 	});
+	//await updateUsers();
 	//await generateUsers(50);
 });
