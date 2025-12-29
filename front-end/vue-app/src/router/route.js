@@ -6,7 +6,7 @@ import Store from '../components/StorePage.vue';
 const routes = [
   { path: '/HomePage', name: 'Home', component: Home },
   { path: '/HelloWorld', name: 'HelloWorld', component: HelloWorld },
-  { path: '/Store', name: 'Store', component: Store },
+  { path: '/StorePage', name: 'Store', component: Store },
 ];
 
 const router = createRouter({
