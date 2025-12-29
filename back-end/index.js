@@ -14,38 +14,6 @@ const { ObjectId } = require("mongodb");
 let db;
 let Users;
 
-//code made to generate 50 users in my dabatase.
-/*async function generateUsers(numUsers = 50) {
-	try {
-		const Users = db.collection("Users");
-		const categories = ["cute", "boyish", "horror", "bright"];
-		const users = [];
-
-		for (let i = 0; i < numUsers; i++) {
-			const tokens = Math.floor(Math.random() * 10) + 1;
-			const baseSpeed = Math.floor(Math.random() * 5) + 1;
-			const likeProbability = +(Math.random() * 0.5 + 0.5).toFixed(2);
-			const dislikeProbability = +(Math.random() * 0.5).toFixed(2);
-
-			users.push({
-				username: `User${i + 1}`,
-				password: "test123",
-				tokens,
-				baseSpeed,
-				preference: categories[Math.floor(Math.random() * categories.length)],
-				likeProbability,
-				dislikeProbability,
-				VotedFor: [],
-			});
-		}
-
-		const result = await Users.insertMany(users);
-		console.log(`Inserted ${result.insertedCount} users`);
-	} catch (err) {
-		console.error("Error generating users:", err);
-	}
-}*/
-
 async function connectDB() {
 	try {
 		
@@ -98,6 +66,51 @@ app.get("/users/:username", async (req, res) => {
 
 app.use(express.static(path.join(__dirname, "public")));
 
+
+connectDB().then(async () => {
+	app.listen(port, () => {
+		console.log(`Server running on port ${port}`);
+	});
+});
+
+
+
+
+//code made to generate 50 users in my dabatase.
+/*async function generateUsers(numUsers = 50) {
+	try {
+		const Users = db.collection("Users");
+		const categories = ["cute", "boyish", "horror", "bright"];
+		const users = [];
+
+		for (let i = 0; i < numUsers; i++) {
+			const tokens = Math.floor(Math.random() * 10) + 1;
+			const baseSpeed = Math.floor(Math.random() * 5) + 1;
+			const likeProbability = +(Math.random() * 0.5 + 0.5).toFixed(2);
+			const dislikeProbability = +(Math.random() * 0.5).toFixed(2);
+
+			users.push({
+				username: `User${i + 1}`,
+				password: "test123",
+				tokens,
+				baseSpeed,
+				preference: categories[Math.floor(Math.random() * categories.length)],
+				likeProbability,
+				dislikeProbability,
+				VotedFor: [],
+			});
+		}
+
+		const result = await Users.insertMany(users);
+		console.log(`Inserted ${result.insertedCount} users`);
+	} catch (err) {
+		console.error("Error generating users:", err);
+	}
+		//await generateUsers(50);
+}*/
+
+
+//update users data 
 /*async function updateUsers() {
   try {
     if (!Users) throw new Error("Users collection not initialized");
@@ -120,12 +133,5 @@ app.use(express.static(path.join(__dirname, "public")));
   } catch (err) {
     console.error("Error updating users:", err);
   }
-}*/
-
-connectDB().then(async () => {
-	app.listen(port, () => {
-		console.log(`Server running on port ${port}`);
-	});
 	//await updateUsers();
-	//await generateUsers(50);
-});
+}*/
