@@ -13,6 +13,8 @@ const { ObjectId } = require("mongodb");
 
 let db;
 let Users;
+let Quizzes;
+
 
 async function connectDB() {
 	try {
@@ -23,6 +25,8 @@ async function connectDB() {
 
 		db = client.db("Voting");
 		Users = db.collection("Users");
+		Quizzes = db.collection("Quizzes");
+
 	} catch (err) {
 		console.error("Error connecting to MongoDB:", err);
 	}
@@ -178,6 +182,83 @@ app.post("/admin/login", async (req, res) => {
   }
 });
 
+app.get("/quizzes", async (req, res) => {
+  try {
+    const quizzesCollection = db.collection("quizzes");
+    const quizzes = await quizzesCollection.find().toArray();
+    res.json(quizzes);
+  } catch (err) {
+    console.error("Error fetching quizzes:", err);
+    res.status(500).json({ error: "Failed to fetch quizzes" });
+  }
+});
+
+app.post("/quizzes", async (req, res) => {
+  const { title, rounds } = req.body;
+
+  try {
+    const quizzesCollection = db.collection("quizzes");
+
+    const lastQuiz = await quizzesCollection
+      .find()
+      .sort({ id: -1 })
+      .limit(1)
+      .toArray();
+
+    const nextId = lastQuiz.length ? lastQuiz[0].id + 1 : 1;
+
+    const newQuiz = {
+      id: nextId,
+      title,
+      rounds,
+      createdAt: new Date()
+    };
+
+    await quizzesCollection.insertOne(newQuiz);
+    res.json({ message: "Quiz created", quiz: newQuiz });
+  } catch (err) {
+    console.error("Error creating quiz:", err);
+    res.status(500).json({ error: "Server error creating quiz" });
+  }
+});
+
+app.put("/quizzes/:id", async (req, res) => {
+  const quizId = parseInt(req.params.id);
+  const { title, rounds } = req.body;
+
+  try {
+    const result = await db.collection("quizzes").updateOne(
+      { id: quizId },
+      { $set: { title, rounds } }
+    );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ error: "Quiz not found" });
+    }
+
+    res.json({ message: "Quiz updated" });
+  } catch (err) {
+    console.error("Error updating quiz:", err);
+    res.status(500).json({ error: "Server error updating quiz" });
+  }
+});
+
+app.delete("/quizzes/:id", async (req, res) => {
+  const quizId = parseInt(req.params.id);
+
+  try {
+    const result = await db.collection("quizzes").deleteOne({ id: quizId });
+
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ error: "Quiz not found" });
+    }
+
+    res.json({ message: "Quiz deleted" });
+  } catch (err) {
+    console.error("Error deleting quiz:", err);
+    res.status(500).json({ error: "Server error deleting quiz" });
+  }
+});
 
 app.use(express.static(path.join(__dirname, "public")));
 
@@ -243,7 +324,7 @@ setInterval(async () => {
   } catch (err) {
     console.error("Error simulating dummy users:", err);
   }
-}, 60000);
+}, 600000);
 
 
 

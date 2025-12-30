@@ -109,6 +109,7 @@ export default {
   },
   mounted() {
     this.fetchUsers();
+  
   }
 };
 </script>

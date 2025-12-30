@@ -32,13 +32,13 @@ export default {
     };
   },
   mounted() {
-    const stored = localStorage.getItem("admin");
-    if (!stored) {
-      this.$router.push("/AdminLogin");
-    } else {
-      this.admin = JSON.parse(stored);
-    }
-  },
+  const stored = localStorage.getItem("admin");
+  if (!stored) {
+    this.$router.push("/AdminLogin");
+  } else {
+    this.admin = JSON.parse(stored);
+  }
+},
   methods: {
     logout() {
       localStorage.removeItem("admin");
