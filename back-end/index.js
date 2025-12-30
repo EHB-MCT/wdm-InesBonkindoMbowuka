@@ -64,6 +64,55 @@ app.get("/users/:username", async (req, res) => {
   }
 });
 
+app.post("/store/buy", async (req, res) => {
+  const { username, packId } = req.body;
+
+  const tokenPacks = {
+    small: { tokens: 5, price: 5 },
+    medium: { tokens: 15, price: 12 },
+    large: { tokens: 40, price: 30 }
+  };
+
+  const pack = tokenPacks[packId];
+  if (!pack) {
+    return res.status(400).json({ error: "Invalid pack" });
+  }
+
+  try {
+    const user = await Users.findOne({ username });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    if (user.money < pack.price) {
+      return res.status(400).json({ error: "Not enough money" });
+    }
+
+    await Users.updateOne(
+      { username },
+      {
+        $inc: {
+          money: -pack.price,
+          tokens: pack.tokens
+        }
+      }
+    );
+
+    res.json({
+      message: "Purchase successful",
+      pack: packId,
+      spent: pack.price,
+      tokensGained: pack.tokens
+    });
+
+  } catch (err) {
+    console.error("Store purchase error:", err);
+    res.status(500).json({ error: "Server error during purchase" });
+  }
+});
+
+
 app.use(express.static(path.join(__dirname, "public")));
 
 
