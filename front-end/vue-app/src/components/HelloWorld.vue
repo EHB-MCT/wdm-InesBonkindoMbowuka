@@ -56,7 +56,7 @@ export default {
     },
     tokensToSpend(user, option) {
       if (this.matchesPreference(user, option)) {
-        return Math.min(user.tokens, Math.floor(Math.random() * 3) + 1);
+        return Math.min(user.tokens, Math.floor(Math.random() * 10) + 1);
       } else {
         if (Math.random() < 0.5) return 0;
         return 1;
@@ -113,4 +113,20 @@ export default {
 };
 </script>
 
-
+<style scoped>
+.question {
+  margin-bottom: 20px;
+}
+.option {
+  padding-left: 10px;
+}
+.total-tokens {
+  margin-top: 5px;
+  font-weight: bold;
+}
+.winning-option {
+  margin-top: 5px;
+  font-weight: bold;
+  color: green;
+}
+</style>

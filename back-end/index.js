@@ -157,8 +157,6 @@ app.post("/vote", async (req, res) => {
   }
 });
 
-
-
 app.use(express.static(path.join(__dirname, "public")));
 
 
@@ -167,6 +165,68 @@ connectDB().then(async () => {
 		console.log(`Server running on port ${port}`);
 	});
 });
+
+setInterval(async () => {
+  try {
+    const allUsers = await Users.find({ username: { $ne: "admin" } }).toArray();
+
+    const roundOptions = [
+      ["boyhood", "cutie pie", "horror maze", "summer"],
+      ["cutiness", "bright light", "boyz", "travel"],
+      ["school uniform", "boy uniform", "night horrors", "campy"],
+      ["cute dress", "bones and all", "bright room", "horror scene"]
+    ];
+
+    const tokenPacks = {
+      small: { tokens: 5, price: 5 },
+      medium: { tokens: 15, price: 12 },
+      large: { tokens: 40, price: 30 }
+    };
+
+    for (const user of allUsers) {
+
+      roundOptions.forEach(async (options, roundIndex) => {
+        if (user.tokens > 0) { 
+          const choice = options[Math.floor(Math.random() * options.length)];
+          const tokensToSpend = Math.min(user.tokens, Math.floor(Math.random() * 10) + 1);
+
+          await Users.updateOne(
+            { _id: user._id },
+            {
+              $push: { VotedFor: { round: roundIndex + 1, choice, tokensSpent: tokensToSpend } },
+              $inc: { tokens: -tokensToSpend }
+            }
+          );
+
+          console.log(`User ${user.username} voted for "${choice}" in round ${roundIndex + 1}, spent ${tokensToSpend} tokens`);
+        }
+      });
+
+      if (Math.random() < user.spendingProbability && user.money > 0) {
+        const affordable = Object.entries(tokenPacks)
+          .filter(([id, pack]) => pack.price <= user.money);
+
+        if (affordable.length > 0) {
+          const [packId, pack] = affordable[Math.floor(Math.random() * affordable.length)];
+
+          await Users.updateOne(
+            { _id: user._id },
+            { $inc: { money: -pack.price, tokens: pack.tokens } }
+          );
+
+          console.log(`User ${user.username} bought ${packId} pack for $${pack.price}, gaining ${pack.tokens} tokens`);
+        }
+      }
+    }
+  } catch (err) {
+    console.error("Error simulating dummy users:", err);
+  }
+}, 60000);
+
+
+
+
+
 
 
 
