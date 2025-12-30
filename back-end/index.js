@@ -157,6 +157,28 @@ app.post("/vote", async (req, res) => {
   }
 });
 
+app.post("/admin/login", async (req, res) => {
+  const { username, password } = req.body;
+
+  if (!username || !password) {
+    return res.status(400).json({ error: "Username and password required" });
+  }
+
+  try {
+    const admin = await Users.findOne({ username: "admin" });
+
+    if (!admin || admin.password !== password) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+
+    res.json({ message: "Login successful", admin: { username: admin.username } });
+  } catch (err) {
+    console.error("Admin login error:", err);
+    res.status(500).json({ error: "Server error during login" });
+  }
+});
+
+
 app.use(express.static(path.join(__dirname, "public")));
 
 

@@ -4,6 +4,7 @@
       <router-link to="/HomePage">Home</router-link>
       <router-link to="/HelloWorld">Quiz</router-link>
       <router-link to="/StorePage">Store</router-link>
+      <router-link to="/AdminLogin">Admin</router-link>
     </nav>
   </header>
 </template>
