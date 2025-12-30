@@ -101,16 +101,62 @@ app.post("/store/buy", async (req, res) => {
 
     res.json({
       message: "Purchase successful",
-      pack: packId,
-      spent: pack.price,
-      tokensGained: pack.tokens
+      packId,
+      tokensGained: pack.tokens,
+      moneySpent: pack.price
     });
 
   } catch (err) {
-    console.error("Store purchase error:", err);
+    console.error("Purchase error:", err);
     res.status(500).json({ error: "Server error during purchase" });
   }
 });
+
+
+app.post("/vote", async (req, res) => {
+  const { username, round, option, tokensSpent } = req.body;
+
+  if (!username || !option || tokensSpent == null) {
+    return res.status(400).json({ error: "Missing vote data" });
+  }
+
+  try {
+    const user = await Users.findOne({ username });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    if (user.tokens < tokensSpent) {
+      return res.status(400).json({ error: "Not enough tokens" });
+    }
+
+    const vote = {
+      round,
+      option,
+      tokensSpent,
+      timestamp: new Date()
+    };
+
+    await Users.updateOne(
+      { username },
+      {
+        $inc: { tokens: -tokensSpent },
+        $push: { VotedFor: vote }
+      }
+    );
+
+    res.json({
+      message: "Vote recorded",
+      vote
+    });
+
+  } catch (err) {
+    console.error("Vote error:", err);
+    res.status(500).json({ error: "Server error during vote" });
+  }
+});
+
 
 
 app.use(express.static(path.join(__dirname, "public")));
