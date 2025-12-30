@@ -184,7 +184,7 @@ app.post("/admin/login", async (req, res) => {
 
 app.get("/quizzes", async (req, res) => {
   try {
-    const quizzesCollection = db.collection("quizzes");
+    const quizzesCollection = db.collection("Quizzes");
     const quizzes = await quizzesCollection.find().toArray();
     res.json(quizzes);
   } catch (err) {
@@ -197,7 +197,7 @@ app.post("/quizzes", async (req, res) => {
   const { title, rounds } = req.body;
 
   try {
-    const quizzesCollection = db.collection("quizzes");
+    const quizzesCollection = db.collection("Quizzes");
 
     const lastQuiz = await quizzesCollection
       .find()
@@ -227,7 +227,7 @@ app.put("/quizzes/:id", async (req, res) => {
   const { title, rounds } = req.body;
 
   try {
-    const result = await db.collection("quizzes").updateOne(
+    const result = await db.collection("Quizzes").updateOne(
       { id: quizId },
       { $set: { title, rounds } }
     );
@@ -247,7 +247,7 @@ app.delete("/quizzes/:id", async (req, res) => {
   const quizId = parseInt(req.params.id);
 
   try {
-    const result = await db.collection("quizzes").deleteOne({ id: quizId });
+    const result = await db.collection("Quizzes").deleteOne({ id: quizId });
 
     if (result.deletedCount === 0) {
       return res.status(404).json({ error: "Quiz not found" });
