@@ -207,6 +207,53 @@ export default {
     return user.VotedFor.reduce((sum, v) => sum + (v.tokensSpent || 0), 0);
   },
 
+  addRound() { this.newQuiz.rounds.push({ options: [""] }); },
+    removeRound(rIndex) { this.newQuiz.rounds.splice(rIndex, 1); },
+    addOption(rIndex) { this.newQuiz.rounds[rIndex].options.push(""); },
+    removeOption(rIndex, oIndex) { this.newQuiz.rounds[rIndex].options.splice(oIndex, 1); },
+    async createQuiz() {
+      try {
+        const res = await fetch("http://localhost:5000/quizzes", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title: this.newQuiz.title, rounds: this.newQuiz.rounds.map(r => r.options) }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          this.quizzes.push(data.quiz);
+          this.newQuiz = { title: "", rounds: [{ options: [""] }] };
+        } else console.error(data.error);
+      } catch (err) { console.error(err); }
+    },
+
+    deleteQuiz(id) {
+      fetch(`http://localhost:5000/quizzes/${id}`, { method: "DELETE" })
+        .then(res => res.ok && (this.quizzes = this.quizzes.filter(q => q.id !== id)))
+        .catch(console.error);
+    },
+
+    startEdit(quiz) { this.editingQuiz = JSON.parse(JSON.stringify(quiz)); },
+    cancelEdit() { this.editingQuiz = null; },
+    addEditRound() { this.editingQuiz.rounds.push([""]); },
+    removeEditRound(rIndex) { this.editingQuiz.rounds.splice(rIndex, 1); },
+    addEditOption(rIndex) { this.editingQuiz.rounds[rIndex].push(""); },
+    removeEditOption(rIndex, oIndex) { this.editingQuiz.rounds[rIndex].splice(oIndex, 1); },
+    async saveQuiz(id) {
+      try {
+        const res = await fetch(`http://localhost:5000/quizzes/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title: this.editingQuiz.title, rounds: this.editingQuiz.rounds }),
+        });
+        if (res.ok) {
+          const index = this.quizzes.findIndex(q => q.id === id);
+          this.quizzes.splice(index, 1, JSON.parse(JSON.stringify(this.editingQuiz)));
+          this.editingQuiz = null;
+        }
+      } catch (err) { console.error(err); }
+    },
+  },
+
   getOptionText(quizId, roundIndex, optionIndex) {
     const quiz = this.quizzes.find(q => q.id === quizId);
     if (!quiz) return "—";
@@ -268,8 +315,7 @@ export default {
     return this.getOptionText(quizId, roundIndex, optionIndex);
   }
 
-}
-,
+
 };
 </script>
 
