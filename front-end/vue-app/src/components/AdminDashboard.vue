@@ -13,6 +13,7 @@
       <div class="tabs">
         <button :class="{ active: page==='quizzes' }" @click="page='quizzes'">Quizzes</button>
         <button :class="{ active: page==='users' }" @click="page='users'">Users</button>
+         <button :class="{ active: page==='stats' }" @click="page='stats'">Stats</button>
       </div>
 
       <div v-show="page==='quizzes'">
@@ -89,6 +90,77 @@
           </table>
         </section>
       </div>
+      <div v-show="page==='stats'">
+  <section>
+    <h2>Active Quiz</h2>
+
+    <div v-if="quizzes.length === 0">
+      <p>No quizzes available</p>
+    </div>
+
+    <div v-else>
+      <table class="users-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Total Tokens spent</th>
+            <th>Winning option</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="quiz in quizzes" :key="quiz.id">
+            <td>{{ quiz.title }}</td>
+            <td>{{ quiz.rounds.length }}</td>
+            <td>
+              {{
+                quiz.rounds.reduce(
+                  (sum, round) => sum + round.length,
+                  0
+                )
+              }}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+  <section>
+    <h2>Past Results</h2>
+
+    <div v-if="quizzes.length === 0">
+      <p>No quizzes available</p>
+    </div>
+
+    <div v-else>
+      <table class="users-table">
+        <thead>
+          <tr>
+            <th>Quiz ID</th>
+            <th>Title</th>
+            <th>Total Rounds</th>
+            <th>Total Options</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="quiz in quizzes" :key="quiz.id">
+            <td>{{ quiz.id }}</td>
+            <td>{{ quiz.title }}</td>
+            <td>{{ quiz.rounds.length }}</td>
+            <td>
+              {{
+                quiz.rounds.reduce(
+                  (sum, round) => sum + round.length,
+                  0
+                )
+              }}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
     </div>
   </div>
 </template>
@@ -115,79 +187,89 @@ export default {
     }
   },
   methods: {
-    logout() {
-      localStorage.removeItem("admin");
-      this.$router.push("/AdminLogin");
-    },
-
-    async fetchQuizzes() {
-      try {
-        const res = await fetch("http://localhost:5000/quizzes");
-        this.quizzes = await res.json();
-      } catch (err) {
-        console.error(err);
-      }
-    },
-    async fetchUsers() {
-      try {
-        const res = await fetch("http://localhost:5000/users");
-        this.users = await res.json();
-      } catch (err) {
-        console.error(err);
-      }
-    },
-
-    totalTokensSpent(user) {
-      if (!user.VotedFor) return 0;
-      return user.VotedFor.reduce((sum, v) => sum + (v.tokensSpent || 0), 0);
-    },
-
-    addRound() { this.newQuiz.rounds.push({ options: [""] }); },
-    removeRound(rIndex) { this.newQuiz.rounds.splice(rIndex, 1); },
-    addOption(rIndex) { this.newQuiz.rounds[rIndex].options.push(""); },
-    removeOption(rIndex, oIndex) { this.newQuiz.rounds[rIndex].options.splice(oIndex, 1); },
-    async createQuiz() {
-      try {
-        const res = await fetch("http://localhost:5000/quizzes", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ title: this.newQuiz.title, rounds: this.newQuiz.rounds.map(r => r.options) }),
-        });
-        const data = await res.json();
-        if (res.ok) {
-          this.quizzes.push(data.quiz);
-          this.newQuiz = { title: "", rounds: [{ options: [""] }] };
-        } else console.error(data.error);
-      } catch (err) { console.error(err); }
-    },
-
-    deleteQuiz(id) {
-      fetch(`http://localhost:5000/quizzes/${id}`, { method: "DELETE" })
-        .then(res => res.ok && (this.quizzes = this.quizzes.filter(q => q.id !== id)))
-        .catch(console.error);
-    },
-
-    startEdit(quiz) { this.editingQuiz = JSON.parse(JSON.stringify(quiz)); },
-    cancelEdit() { this.editingQuiz = null; },
-    addEditRound() { this.editingQuiz.rounds.push([""]); },
-    removeEditRound(rIndex) { this.editingQuiz.rounds.splice(rIndex, 1); },
-    addEditOption(rIndex) { this.editingQuiz.rounds[rIndex].push(""); },
-    removeEditOption(rIndex, oIndex) { this.editingQuiz.rounds[rIndex].splice(oIndex, 1); },
-    async saveQuiz(id) {
-      try {
-        const res = await fetch(`http://localhost:5000/quizzes/${id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ title: this.editingQuiz.title, rounds: this.editingQuiz.rounds }),
-        });
-        if (res.ok) {
-          const index = this.quizzes.findIndex(q => q.id === id);
-          this.quizzes.splice(index, 1, JSON.parse(JSON.stringify(this.editingQuiz)));
-          this.editingQuiz = null;
-        }
-      } catch (err) { console.error(err); }
-    },
+  logout() {
+    localStorage.removeItem("admin");
+    this.$router.push("/AdminLogin");
   },
+
+  async fetchQuizzes() {
+    const res = await fetch("http://localhost:5000/quizzes");
+    this.quizzes = await res.json();
+  },
+
+  async fetchUsers() {
+    const res = await fetch("http://localhost:5000/users");
+    this.users = await res.json();
+  },
+
+  totalTokensSpent(user) {
+    if (!user.VotedFor) return 0;
+    return user.VotedFor.reduce((sum, v) => sum + (v.tokensSpent || 0), 0);
+  },
+
+  getOptionText(quizId, roundIndex, optionIndex) {
+    const quiz = this.quizzes.find(q => q.id === quizId);
+    if (!quiz) return "—";
+
+    const round = quiz.rounds[roundIndex];
+    if (!round) return "—";
+
+    return round[optionIndex] || "—";
+  },
+
+  tokensSpentForQuiz(quizId) {
+    let total = 0;
+
+    this.users.forEach(user => {
+      if (!user.VotedFor) return;
+
+      user.VotedFor.forEach(vote => {
+        if (vote.quizId === quizId) {
+          total += vote.tokensSpent || 0;
+        }
+      });
+    });
+
+    return total;
+  },
+
+  winningOptionForQuiz(quizId) {
+    const counts = {};
+
+    this.users.forEach(user => {
+      if (!user.VotedFor) return;
+
+      user.VotedFor.forEach(vote => {
+        if (vote.quizId === quizId) {
+          const key = `${vote.round}-${vote.option}`;
+
+          counts[key] =
+            (counts[key] || 0) + (vote.tokensSpent || 0);
+        }
+      });
+    });
+
+    let winningKey = null;
+    let max = 0;
+
+    for (const key in counts) {
+      if (counts[key] > max) {
+        max = counts[key];
+        winningKey = key;
+      }
+    }
+
+    if (!winningKey) return "—";
+
+    const [roundIndex, optionIndex] = winningKey
+      .split("-")
+      .map(Number);
+
+    return this.getOptionText(quizId, roundIndex, optionIndex);
+  }
+
+}
+,
 };
 </script>
 

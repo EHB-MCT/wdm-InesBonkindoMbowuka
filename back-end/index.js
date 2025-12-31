@@ -118,7 +118,7 @@ app.post("/store/buy", async (req, res) => {
 
 
 app.post("/vote", async (req, res) => {
-  const { username, round, option, tokensSpent } = req.body;
+  const { username, quizId, round, option, tokensSpent } = req.body;
 
   if (!username || !option || tokensSpent == null) {
     return res.status(400).json({ error: "Missing vote data" });
@@ -136,19 +136,21 @@ app.post("/vote", async (req, res) => {
     }
 
     const vote = {
+	  quizId,
       round,
       option,
       tokensSpent,
       timestamp: new Date()
     };
 
-    await Users.updateOne(
-      { username },
-      {
-        $inc: { tokens: -tokensSpent },
-        $push: { VotedFor: vote }
-      }
-    );
+    await db.collection("Quizzes").updateOne(
+  { id: quizId },
+  {
+    $inc: { "results.totalTokens": tokensSpent },
+    $push: { "results.optionVotes": { option, tokensSpent, username } }
+  }
+);
+
 
     res.json({
       message: "Vote recorded",
@@ -194,54 +196,56 @@ app.get("/quizzes", async (req, res) => {
 });
 
 app.post("/quizzes", async (req, res) => {
-  const { title, rounds } = req.body;
+  const { title, rounds, startTime, endTime } = req.body;
 
+  const lastQuiz = await Quizzes.find().sort({ id: -1 }).limit(1).toArray();
+  const nextId = lastQuiz.length ? lastQuiz[0].id + 1 : 1;
+
+  const newQuiz = {
+    id: nextId,
+    title,
+    rounds,
+    startTime: new Date(startTime),
+    endTime: new Date(endTime),
+    createdAt: new Date(),
+    results: {
+      totalTokens: 0,
+      votes: []
+    }
+  };
+
+  await Quizzes.insertOne(newQuiz);
+  res.json({ message: "Quiz created", quiz: newQuiz });
+});
+
+app.get("/quizzes/active", async (req, res) => {
   try {
-    const quizzesCollection = db.collection("Quizzes");
+    const now = new Date();
 
-    const lastQuiz = await quizzesCollection
-      .find()
-      .sort({ id: -1 })
-      .limit(1)
-      .toArray();
+    const activeQuizzes = await Quizzes.find({
+      startTime: { $lte: now },
+      endTime: { $gte: now }
+    }).toArray();
 
-    const nextId = lastQuiz.length ? lastQuiz[0].id + 1 : 1;
-
-    const newQuiz = {
-      id: nextId,
-      title,
-      rounds,
-      createdAt: new Date()
-    };
-
-    await quizzesCollection.insertOne(newQuiz);
-    res.json({ message: "Quiz created", quiz: newQuiz });
+    res.json(activeQuizzes);
   } catch (err) {
-    console.error("Error creating quiz:", err);
-    res.status(500).json({ error: "Server error creating quiz" });
+    console.error("Error fetching active quizzes:", err);
+    res.status(500).json({ error: "Failed to fetch active quizzes" });
   }
 });
+
+
 
 app.put("/quizzes/:id", async (req, res) => {
   const quizId = parseInt(req.params.id);
-  const { title, rounds } = req.body;
+  const { title, rounds, startTime, endTime } = req.body;
 
-  try {
-    const result = await db.collection("Quizzes").updateOne(
-      { id: quizId },
-      { $set: { title, rounds } }
-    );
-
-    if (result.matchedCount === 0) {
-      return res.status(404).json({ error: "Quiz not found" });
-    }
-
-    res.json({ message: "Quiz updated" });
-  } catch (err) {
-    console.error("Error updating quiz:", err);
-    res.status(500).json({ error: "Server error updating quiz" });
-  }
+  const result = await db.collection("Quizzes").updateOne(
+    { id: quizId },
+    { $set: { title, rounds, startTime: new Date(startTime), endTime: new Date(endTime) } }
+  );
 });
+
 
 app.delete("/quizzes/:id", async (req, res) => {
   const quizId = parseInt(req.params.id);
@@ -324,7 +328,7 @@ setInterval(async () => {
   } catch (err) {
     console.error("Error simulating dummy users:", err);
   }
-}, 600000);
+}, 60000);
 
 
 
