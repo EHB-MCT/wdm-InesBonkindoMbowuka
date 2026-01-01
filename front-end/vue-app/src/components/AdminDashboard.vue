@@ -20,7 +20,28 @@
         <section>
           <h2>Create Quiz</h2>
           <input v-model="newQuiz.title" placeholder="Quiz Title" />
+          <div class="time-inputs">
+  <label>
+    Start Time:
+    <input
+      type="datetime-local"
+      :value="newQuiz.startTime"
+      @input="updateStartTime"
+    />
+    <button type="button" @click="addStartTime">Reset</button>
+  </label>
 
+  <label>
+    End Time:
+    <input
+      type="datetime-local"
+      :value="newQuiz.endTime"
+      @input="updateEndTime"
+    />
+    <button type="button" @click="addEndTime">Reset</button>
+  </label>
+</div>
+          
           <div v-for="(round, rIndex) in newQuiz.rounds" :key="rIndex" class="round">
             <h4>Round {{ rIndex + 1 }}</h4>
             <div v-for="(option, oIndex) in round.options" :key="oIndex" class="option">
@@ -36,36 +57,56 @@
         </section>
 
         <section>
-          <h2>Existing Quizzes</h2>
-          <div v-for="quiz in quizzes" :key="quiz.id" class="quiz-item">
-            <div v-if="editingQuiz && editingQuiz.id === quiz.id">
-              <input v-model="editingQuiz.title" placeholder="Quiz Title" />
+         <section>
+  <h2>Existing Quizzes</h2>
 
-              <div v-for="(round, rIndex) in editingQuiz.rounds" :key="rIndex" class="round">
-                <h4>Round {{ rIndex + 1 }}</h4>
-                <div v-for="(option, oIndex) in round" :key="oIndex" class="option">
-                  <input v-model="editingQuiz.rounds[rIndex][oIndex]" placeholder="Option text" />
-                  <button @click="removeEditOption(rIndex, oIndex)">Remove Option</button>
-                </div>
-                <button @click="addEditOption(rIndex)">Add Option</button>
-                <button @click="removeEditRound(rIndex)">Remove Round</button>
-              </div>
+  <div v-for="quiz in quizzes" :key="quiz.id" class="quiz-item">
+    <div v-if="editingQuiz && editingQuiz.id === quiz.id">
+      <input v-model="editingQuiz.title" placeholder="Quiz Title" />
+      <div class="time-inputs">
+        <label>
+          Start Time:
+          <input type="datetime-local" v-model="editingQuiz.startTime" />
+        </label>
+        <label>
+          End Time:
+          <input type="datetime-local" v-model="editingQuiz.endTime" />
+        </label>
+      </div>
+      <div v-for="(round, rIndex) in editingQuiz.rounds" :key="rIndex" class="round">
+        <h4>Round {{ rIndex + 1 }}</h4>
 
-              <button @click="addEditRound">Add Round</button>
-              <button @click="saveQuiz(editingQuiz.id)">Save Changes</button>
-              <button @click="cancelEdit">Cancel</button>
-            </div>
+        <div v-for="(option, oIndex) in round.options" :key="oIndex" class="option">
+          <input v-model="editingQuiz.rounds[rIndex].options[oIndex]" placeholder="Option text" />
+          <button type="button" @click="removeEditOption(rIndex, oIndex)">Remove Option</button>
+        </div>
 
-            <div v-else>
-              <h3>{{ quiz.title }} (ID: {{ quiz.id }})</h3>
-              <div v-for="(round, rIndex) in quiz.rounds" :key="rIndex" class="round">
-                <h4>Round {{ rIndex + 1 }}</h4>
-                <div v-for="option in round" :key="option">{{ option }}</div>
-              </div>
-              <button @click="startEdit(quiz)">Edit</button>
-              <button @click="deleteQuiz(quiz.id)">Delete</button>
-            </div>
-          </div>
+        <button type="button" @click="addEditOption(rIndex)">Add Option</button>
+        <button type="button" @click="removeEditRound(rIndex)">Remove Round</button>
+      </div>
+
+      <button type="button" @click="addEditRound">Add Round</button>
+      <button type="button" @click="saveQuiz(editingQuiz.id)">Save Changes</button>
+      <button type="button" @click="cancelEdit">Cancel</button>
+    </div>
+    <div v-else>
+     <h3>{{ quiz.title }} (ID: {{ quiz.id }})</h3>
+  <p>Start: {{ quiz.startTime || "—" }} | End: {{ quiz.endTime || "—" }}</p>
+  
+  <div v-for="(round, rIndex) in quiz.rounds" :key="rIndex" class="round">
+    <h4>Round {{ rIndex + 1 }}</h4>
+    <ul>
+      <li v-for="option in round.options" :key="option">{{ option }}</li>
+    </ul>
+  </div>
+
+  <button @click="startEdit(quiz)">Edit</button>
+  <button @click="deleteQuiz(quiz.id)">Delete</button> 
+    </div>
+
+  </div>
+</section>
+
         </section>
       </div>
 
@@ -194,7 +235,10 @@ export default {
 
   async fetchQuizzes() {
     const res = await fetch("http://localhost:5000/quizzes");
-    this.quizzes = await res.json();
+    this.quizzes = (await res.json()).map(quiz => ({
+    ...quiz,
+    rounds: quiz.rounds.map(round => ({ options: round }))
+  }));
   },
 
   async fetchUsers() {
@@ -205,6 +249,22 @@ export default {
   totalTokensSpent(user) {
     if (!user.VotedFor) return 0;
     return user.VotedFor.reduce((sum, v) => sum + (v.tokensSpent || 0), 0);
+  },
+
+  addStartTime() {
+    this.newQuiz.startTime = "";
+  },
+
+  addEndTime() {
+    this.newQuiz.endTime = "";
+  },
+
+  updateStartTime(event) {
+    this.newQuiz.startTime = event.target.value;
+  },
+
+  updateEndTime(event) {
+    this.newQuiz.endTime = event.target.value;
   },
 
   addRound() {
@@ -248,7 +308,7 @@ export default {
     this.editingQuiz = {
       id: quiz.id,
       title: quiz.title,
-      rounds: quiz.rounds.map(round => ({ options: [...round.options || round] }))
+      rounds: quiz.rounds.map(round => [...round])
     };
   },
 
@@ -261,39 +321,50 @@ export default {
   },
   
   addEditOption(rIndex) {
-    this.editingQuiz.rounds[rIndex].options.push("");
+    this.editingQuiz.rounds[rIndex].push("");
   },
   
   removeEditOption(rIndex, oIndex) {
     this.editingQuiz.rounds[rIndex].options.splice(oIndex, 1);
   },
 
-  async saveQuiz(id) {
-    try {
-      const res = await fetch(`http://localhost:5000/quizzes/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: this.editingQuiz.title,
-          rounds: this.editingQuiz.rounds.map(r => r.options)
-        }),
-      });
-      if (res.ok) {
-       this.quizzes = this.quizzes.map(q => 
-        q.id === id ? JSON.parse(JSON.stringify(this.editingQuiz)) : q
+  cancelEdit() {
+  this.editingQuiz = null;
+},
+
+async saveQuiz(id) {
+  try {
+    const payload = {
+      title: this.editingQuiz.title,
+      rounds: this.editingQuiz.rounds.map(r => r.options),
+      startTime: this.editingQuiz.startTime || this.quizzes.find(q => q.id === id)?.startTime,
+      endTime: this.editingQuiz.endTime || this.quizzes.find(q => q.id === id)?.endTime
+    };
+
+    const res = await fetch(`http://localhost:5000/quizzes/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (res.ok) {
+      this.quizzes = this.quizzes.map(q =>
+        q.id === id ? { ...this.editingQuiz, ...payload } : q
       );
 
       this.editingQuiz = null;
-        
-      } else {
-        const data = await res.json();
-        console.error(data.error);
-      }
-    } catch (err) {
-      console.error(err);
+
+      alert("Quiz changes have been saved.")
+      
+    } else {
+      const data = await res.json();
+      console.error(data.error);
     }
+  } catch (err) {
+    console.error(err);
   }
-  },
+}
+},
 
   getOptionText(quizId, roundIndex, optionIndex) {
     const quiz = this.quizzes.find(q => q.id === quizId);
@@ -354,7 +425,7 @@ export default {
       .map(Number);
 
     return this.getOptionText(quizId, roundIndex, optionIndex);
-  }
+  },
 };
 </script>
 
