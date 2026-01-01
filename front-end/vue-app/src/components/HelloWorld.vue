@@ -1,32 +1,32 @@
 <template>
   <div class="quiz-container">
-    <h1 v-if="activeQuiz">{{ activeQuiz.title }}</h1>
+    <h1 v-if="activeQuizzes.length">Active Quizzes</h1>
     <h1 v-else>Loading quiz…</h1>
-    <div v-if="activeQuiz">
+    <div v-for="quiz in activeQuizzes" :key="quiz.id" class="quiz-block">
       <div
-        v-for="(options, roundIndex) in activeQuiz.rounds"
+        v-for="(options, roundIndex) in quiz.rounds"
         :key="roundIndex"
         class="question"
       >
-        <h2>Round {{ roundIndex + 1 }}</h2>
+        <h2> {{ quiz.title }}</h2>
 
         <div v-for="option in options" :key="option" class="option">
           {{ option }}
         </div>
 
-        <button @click="showResults(roundIndex)">
+        <button @click="showResults(quiz, roundIndex)">
           Show Results
         </button>
 
         <div class="total-tokens">
-          Total Tokens Spent: {{ totalTokens[roundIndex] || 0 }}
+          Total Tokens Spent: {{ totalTokens[quiz.id]?.[roundIndex] || 0 }}
         </div>
 
         <div
           class="winning-option"
-          v-if="winningOption[roundIndex]"
+          v-if="winningOption[quiz.id]?.[roundIndex]"
         >
-          Winning Option: {{ winningOption[roundIndex] }}
+          Winning Option: {{ winningOption[quiz.id][roundIndex] }}
         </div>
       </div>
     </div>
@@ -38,7 +38,7 @@ export default {
   data() {
     return {
     users: [],
-    activeQuiz: null,
+    activeQuizzes: [],
     totalTokens: {},
     winningOption: {}
   };
@@ -66,8 +66,7 @@ export default {
 
     async fetchQuizzes() {
     const res = await fetch("http://localhost:5000/quizzes/active");
-    const quizzes = await res.json();
-    this.activeQuiz = quizzes[0] || null;
+    this.activeQuizzes=await res.json();
   },
 
     tokensToSpend(user, option) {
@@ -105,48 +104,54 @@ export default {
       return weighted[Math.floor(Math.random() * weighted.length)];
     },
 
-    async showResults(roundIndex) {
-      let total = 0;
-      let votesPerOption = {};
+    async showResults(quiz, roundIndex) {
+  let total = 0;
+  let votesPerOption = {};
 
-    for (const user of this.users) {
-      if (user.tokens <= 0) continue;
+  for (const user of this.users) {
+    if (user.tokens <= 0) continue;
 
-      const choice = this.weightedChoice(user, this.activeQuiz.rounds[roundIndex]);
-      const optionIndex = this.activeQuiz.rounds[roundIndex].indexOf(choice);
-      const spend = this.tokensToSpend(user, choice);
+    const options = quiz.rounds[roundIndex];
+    if (!options) return;
 
-      if (spend <= 0) continue;
+    const choice = this.weightedChoice(user, options);
+    const optionIndex = options.indexOf(choice);
+    const spend = this.tokensToSpend(user, choice);
 
-      await fetch("http://localhost:5000/vote", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          username: user.username,
-          quizId: this.activeQuiz.id,
-          round: roundIndex,
-          option: optionIndex,
-          tokensSpent: spend
-        })
-      });
+    if (spend <= 0) continue;
 
-      total += spend;
+    await fetch("http://localhost:5000/vote", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        username: user.username,
+        quizId: quiz.id,
+        round: roundIndex,
+        option: optionIndex,
+        tokensSpent: spend
+      })
+    });
+    
+    console.log(
+      `[VOTE] Quiz: ${quiz.title} (${quiz.id}) | Round: ${roundIndex + 1} ${user.username} voted for "${choice}" (option ${optionIndex}) Tokens spent: ${spend} `
+    );
+   
 
-      votesPerOption[choice] = (votesPerOption[choice] || 0) + spend;
-
-      console.log(
-        `Round ${roundIndex + 1} | ${user.username} voted for "${choice}" | Tokens: ${spend}`
-      );
+    total += spend;
+    votesPerOption[choice] = (votesPerOption[choice] || 0) + spend;
   }
 
-    const sorted = Object.entries(votesPerOption).sort((a, b) => b[1] - a[1]);
-    const winner = sorted.length ? sorted[0][0] : null;
+  const sorted = Object.entries(votesPerOption).sort((a, b) => b[1] - a[1]);
+  const winner = sorted.length ? sorted[0][0] : null;
 
-    this.totalTokens = { ...this.totalTokens, [roundIndex]: total };
-    this.winningOption = { ...this.winningOption, [roundIndex]: winner };
+  if (!this.totalTokens[quiz.id]) this.totalTokens[quiz.id] = {};
+  if (!this.winningOption[quiz.id]) this.winningOption[quiz.id] = {};
 
-    await this.fetchUsers();
-  }
+  this.totalTokens[quiz.id][roundIndex] = total;
+  this.winningOption[quiz.id][roundIndex] = winner;
+
+  await this.fetchUsers();
+}
 },
 
   mounted() {

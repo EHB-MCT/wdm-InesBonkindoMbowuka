@@ -21,31 +21,31 @@
           <h2>Create Quiz</h2>
           <input v-model="newQuiz.title" placeholder="Quiz Title" />
           <div class="time-inputs">
-  <label>
+    <label>
     Start Time:
     <input
       type="datetime-local"
-      :value="newQuiz.startTime"
-      @input="updateStartTime"
+      :value="toDateTimeLocal(newQuiz.startTime)"
+      @input="newQuiz.startTime = $event.target.value"
     />
-    <button type="button" @click="addStartTime">Reset</button>
+
+    <button type="button" @click="newQuiz.startTime=''">Reset</button>
   </label>
 
   <label>
     End Time:
     <input
       type="datetime-local"
-      :value="newQuiz.endTime"
-      @input="updateEndTime"
+      :value="toDateTimeLocal(newQuiz.endTime)"
+      @input="newQuiz.endTime = $event.target.value"
     />
-    <button type="button" @click="addEndTime">Reset</button>
+    <button type="button" @click="resetEndTime">Reset</button>
   </label>
-</div>
-          
+</div> 
           <div v-for="(round, rIndex) in newQuiz.rounds" :key="rIndex" class="round">
             <h4>Round {{ rIndex + 1 }}</h4>
             <div v-for="(option, oIndex) in round.options" :key="oIndex" class="option">
-              <input v-model="newQuiz.rounds[rIndex].options[oIndex]" placeholder="Option text" />
+              <input v-model="round.options[oIndex]" placeholder="Option text" />
               <button @click="removeOption(rIndex, oIndex)">Remove Option</button>
             </div>
             <button @click="addOption(rIndex)">Add Option</button>
@@ -58,26 +58,30 @@
 
         <section>
          <section>
-  <h2>Existing Quizzes</h2>
-
-  <div v-for="quiz in quizzes" :key="quiz.id" class="quiz-item">
+  <h2>Ongoing Quizzes</h2>
+  <div v-for="quiz in activeQuizzes" :key="quiz.id" class="quiz-item">
+    
     <div v-if="editingQuiz && editingQuiz.id === quiz.id">
       <input v-model="editingQuiz.title" placeholder="Quiz Title" />
       <div class="time-inputs">
         <label>
           Start Time:
-          <input type="datetime-local" v-model="editingQuiz.startTime" />
+          <input type="datetime-local"
+            :value="toDateTimeLocal(editingQuiz.startTime)"
+            @input="editingQuiz.startTime = $event.target.value" />
         </label>
         <label>
           End Time:
-          <input type="datetime-local" v-model="editingQuiz.endTime" />
+          <input type="datetime-local"
+            :value="toDateTimeLocal(editingQuiz.endTime)"
+            @input="editingQuiz.endTime = $event.target.value" />
         </label>
       </div>
       <div v-for="(round, rIndex) in editingQuiz.rounds" :key="rIndex" class="round">
         <h4>Round {{ rIndex + 1 }}</h4>
 
         <div v-for="(option, oIndex) in round.options" :key="oIndex" class="option">
-          <input v-model="editingQuiz.rounds[rIndex].options[oIndex]" placeholder="Option text" />
+          <input v-model="round.options[oIndex]" placeholder="Option text" />
           <button type="button" @click="removeEditOption(rIndex, oIndex)">Remove Option</button>
         </div>
 
@@ -89,9 +93,10 @@
       <button type="button" @click="saveQuiz(editingQuiz.id)">Save Changes</button>
       <button type="button" @click="cancelEdit">Cancel</button>
     </div>
+
     <div v-else>
      <h3>{{ quiz.title }} (ID: {{ quiz.id }})</h3>
-  <p>Start: {{ quiz.startTime || "—" }} | End: {{ quiz.endTime || "—" }}</p>
+        <p>Start: {{ quiz.startTime || "—" }} | End: {{ quiz.endTime || "—" }}</p>
   
   <div v-for="(round, rIndex) in quiz.rounds" :key="rIndex" class="round">
     <h4>Round {{ rIndex + 1 }}</h4>
@@ -99,11 +104,9 @@
       <li v-for="option in round.options" :key="option">{{ option }}</li>
     </ul>
   </div>
-
   <button @click="startEdit(quiz)">Edit</button>
   <button @click="deleteQuiz(quiz.id)">Delete</button> 
     </div>
-
   </div>
 </section>
 
@@ -138,7 +141,6 @@
     <div v-if="quizzes.length === 0">
       <p>No quizzes available</p>
     </div>
-
     <div v-else>
       <table class="users-table">
         <thead>
@@ -152,14 +154,7 @@
           <tr v-for="quiz in quizzes" :key="quiz.id">
             <td>{{ quiz.title }}</td>
             <td>{{ quiz.rounds.length }}</td>
-            <td>
-              {{
-                quiz.rounds.reduce(
-                  (sum, round) => sum + round.length,
-                  0
-                )
-              }}
-            </td>
+            <td>{{quiz.rounds.reduce((sum, round) => sum + round.options.length, 0)}}</td>
           </tr>
         </tbody>
       </table>
@@ -214,7 +209,7 @@ export default {
       page: "quizzes", 
       quizzes: [],
       users: [],
-      newQuiz: { title: "", rounds: [{ options: [""] }] },
+      newQuiz: { title: "", startTime:"", endTime:"",rounds: [{ options: [""] }] },
       editingQuiz: null,
     };
   },
@@ -233,18 +228,23 @@ export default {
     this.$router.push("/AdminLogin");
   },
 
-  async fetchQuizzes() {
-    const res = await fetch("http://localhost:5000/quizzes");
-    this.quizzes = (await res.json()).map(quiz => ({
-    ...quiz,
-    rounds: quiz.rounds.map(round => ({ options: round }))
-  }));
-  },
+    async fetchQuizzes() {
+      try {
+        const res = await fetch("http://localhost:5000/quizzes");
+        const data = await res.json();
+        this.quizzes = data.map(q => ({
+          ...q,
+          rounds: q.rounds.map(r => ({ options: r }))
+        }));
+      } catch (err) { console.error(err); }
+    },
 
-  async fetchUsers() {
-    const res = await fetch("http://localhost:5000/users");
-    this.users = await res.json();
-  },
+   async fetchUsers() {
+      try {
+        const res = await fetch("http://localhost:5000/users");
+        this.users = await res.json();
+      } catch (err) { console.error(err); }
+    },
 
   totalTokensSpent(user) {
     if (!user.VotedFor) return 0;
@@ -255,7 +255,7 @@ export default {
     this.newQuiz.startTime = "";
   },
 
-  addEndTime() {
+  resetEndTime() {
     this.newQuiz.endTime = "";
   },
 
@@ -266,6 +266,19 @@ export default {
   updateEndTime(event) {
     this.newQuiz.endTime = event.target.value;
   },
+
+   toDateTimeLocal(isoString) {
+      if (!isoString) return "";
+      const date = new Date(isoString);
+      const pad = n => n.toString().padStart(2, "0");
+      return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    },
+
+ toISOStringLocal(dateTimeLocal) {
+      if (!dateTimeLocal) return null;
+      
+      return dateTimeLocal || null;
+    },
 
   addRound() {
         this.newQuiz.rounds.push({ options: [""] });
@@ -283,34 +296,46 @@ export default {
         this.newQuiz.rounds[rIndex].options.splice(oIndex, 1);
   },
 
-  async createQuiz() {
+   async createQuiz() {
       try {
+        const payload = {
+          title: this.newQuiz.title,
+          startTime: this.toISOStringLocal(this.newQuiz.startTime),
+          endTime: this.toISOStringLocal(this.newQuiz.endTime),
+          rounds: this.newQuiz.rounds.map(r => r.options)
+        };
         const res = await fetch("http://localhost:5000/quizzes", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ title: this.newQuiz.title, rounds: this.newQuiz.rounds.map(r => r.options) }),
+          body: JSON.stringify(payload)
         });
         const data = await res.json();
         if (res.ok) {
-          this.quizzes.push(data.quiz);
-          this.newQuiz = { title: "", rounds: [{ options: [""] }] };
+          this.quizzes.push({
+            ...data.quiz,
+            rounds: data.quiz.rounds.map(r => ({ options: r }))
+          });
+          this.newQuiz = { title: "", startTime: "", endTime: "", rounds: [{ options: [""] }] };
+          alert("Quiz created successfully!");
         } else console.error(data.error);
       } catch (err) { console.error(err); }
-  },
+    },
 
   deleteQuiz(id) {
       fetch(`http://localhost:5000/quizzes/${id}`, { method: "DELETE" })
-        .then(res => res.ok && (this.quizzes = this.quizzes.filter(q => q.id !== id)))
+        .then(res => { if(res.ok) this.quizzes = this.quizzes.filter(q=>q.id!==id); })
         .catch(console.error);
   },
   
-  startEdit(quiz) {
-    this.editingQuiz = {
-      id: quiz.id,
-      title: quiz.title,
-      rounds: quiz.rounds.map(round => [...round])
-    };
-  },
+ startEdit(quiz) {
+  this.editingQuiz = {
+    id: quiz.id,
+    title: quiz.title,
+    startTime: quiz.startTime,
+    endTime: quiz.endTime,
+     rounds: quiz.rounds.map(r => ({ options: [...r.options] }))
+  };
+},
 
   addEditRound() {
     this.editingQuiz.rounds.push({ options: [""] });
@@ -321,7 +346,7 @@ export default {
   },
   
   addEditOption(rIndex) {
-    this.editingQuiz.rounds[rIndex].push("");
+    this.editingQuiz.rounds[rIndex].options.push("");
   },
   
   removeEditOption(rIndex, oIndex) {
@@ -330,40 +355,37 @@ export default {
 
   cancelEdit() {
   this.editingQuiz = null;
+
+  
 },
 
 async saveQuiz(id) {
-  try {
-    const payload = {
-      title: this.editingQuiz.title,
-      rounds: this.editingQuiz.rounds.map(r => r.options),
-      startTime: this.editingQuiz.startTime || this.quizzes.find(q => q.id === id)?.startTime,
-      endTime: this.editingQuiz.endTime || this.quizzes.find(q => q.id === id)?.endTime
-    };
-
-    const res = await fetch(`http://localhost:5000/quizzes/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    if (res.ok) {
-      this.quizzes = this.quizzes.map(q =>
-        q.id === id ? { ...this.editingQuiz, ...payload } : q
-      );
-
-      this.editingQuiz = null;
-
-      alert("Quiz changes have been saved.")
-      
-    } else {
-      const data = await res.json();
-      console.error(data.error);
+      try {
+        const payload = {
+          title: this.editingQuiz.title,
+          startTime: this.toISOStringLocal(this.editingQuiz.startTime),
+          endTime: this.toISOStringLocal(this.editingQuiz.endTime),
+          rounds: this.editingQuiz.rounds.map(r => r.options)
+        };
+        const res = await fetch(`http://localhost:5000/quizzes/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if(res.ok) {
+          this.quizzes = this.quizzes.map(q => q.id===id ? {
+            ...q,
+            title: payload.title,
+            startTime: payload.startTime,
+            endTime: payload.endTime,
+            rounds: payload.rounds.map(r => ({ options: r }))
+          } : q);
+          this.editingQuiz = null;
+          alert("Quiz saved successfully!");
+        } else console.error(data.error);
+      } catch(err) { console.error(err); }
     }
-  } catch (err) {
-    console.error(err);
-  }
-}
 },
 
   getOptionText(quizId, roundIndex, optionIndex) {
@@ -426,6 +448,37 @@ async saveQuiz(id) {
 
     return this.getOptionText(quizId, roundIndex, optionIndex);
   },
+
+  topSpendersForQuiz(quizId) {
+  const spenders = this.users
+    .filter(u => u.VotedFor)
+    .map(u => {
+      const spent = u.VotedFor
+        .filter(v => v.quizId === quizId)
+        .reduce((sum, v) => sum + (v.tokensSpent || 0), 0);
+      return { username: u.username, spent };
+    })
+    .filter(u => u.spent > 0)
+    .sort((a, b) => b.spent - a.spent)
+    .slice(0, 3);
+  return spenders;
+},
+
+computed: {
+    activeQuizzes() {
+      const now = new Date();
+      return this.quizzes.filter(q => {
+        const start = q.startTime ? new Date(q.startTime) : null;
+        const end = q.endTime ? new Date(q.endTime) : null;
+        return (!start || start <= now) && (!end || end >= now);
+      });
+    },
+    pastQuizzes() {
+      const now = new Date();
+      return this.quizzes.filter(q => q.endTime && new Date(q.endTime) < now);
+    }
+  }
+
 };
 </script>
 
