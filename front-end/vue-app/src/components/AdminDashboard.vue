@@ -147,14 +147,12 @@
           <tr>
             <th>Name</th>
             <th>Current amount of Tokens spent</th>
-            <th>Winning option</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="quiz in activeQuizzes" :key="quiz.id">
             <td>{{ quiz.title }}</td>
             <td>{{ tokensSpentForQuiz(quiz.id) }}</td>
-            <td>{{winningOptionForQuiz(quiz.id)}}</td>
           </tr>
         </tbody>
       </table>
@@ -174,12 +172,12 @@
             <th>Quiz ID</th>
             <th>Name Quiz</th>
             <th>Top 3 Voters</th>
-            <th>Winning option</th>
+            <th>Winner</th>
             <th>Total tokens spent</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="quiz in quizzes" :key="quiz.id">
+          <tr v-for="quiz in pastQuizzes" :key="quiz.id">
             <td>{{ quiz.id }}</td>
             <td>{{ quiz.title }}</td>
             <td>
@@ -396,9 +394,9 @@ getOptionText(quizId, roundIndex, optionIndex) {
     if (!quiz) return "—";
 
     const round = quiz.rounds[roundIndex];
-    if (!round) return "—";
+    if (!round|| !round.options) return "—";
 
-    return round[optionIndex] || "—";
+    return round.options[optionIndex] ?? "—";
   },
 tokensSpentForQuiz(quizId) {
     let total = 0;
@@ -472,12 +470,15 @@ computed: {
       return this.quizzes.filter(q => {
         const start = q.startTime ? new Date(q.startTime) : null;
         const end = q.endTime ? new Date(q.endTime) : null;
-        return (!start || start <= now) && (!end || end >= now);
+        return (!start || start <= now) && (!end || end > now);
       });
     },
     pastQuizzes() {
       const now = new Date();
-      return this.quizzes.filter(q => q.endTime && new Date(q.endTime) < now);
+      return this.quizzes.filter(q => 
+      {if(!q.endTime) return false;
+        return new Date(q.endTime) <= now;
+      })
     }
   }
 
