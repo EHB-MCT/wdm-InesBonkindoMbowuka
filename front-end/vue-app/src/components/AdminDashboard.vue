@@ -146,15 +146,15 @@
         <thead>
           <tr>
             <th>Name</th>
-            <th>Total Tokens spent</th>
+            <th>Current amount of Tokens spent</th>
             <th>Winning option</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="quiz in quizzes" :key="quiz.id">
+          <tr v-for="quiz in activeQuizzes" :key="quiz.id">
             <td>{{ quiz.title }}</td>
-            <td>{{ quiz.rounds.length }}</td>
-            <td>{{quiz.rounds.reduce((sum, round) => sum + round.options.length, 0)}}</td>
+            <td>{{ tokensSpentForQuiz(quiz.id) }}</td>
+            <td>{{winningOptionForQuiz(quiz.id)}}</td>
           </tr>
         </tbody>
       </table>
@@ -172,24 +172,28 @@
         <thead>
           <tr>
             <th>Quiz ID</th>
-            <th>Title</th>
-            <th>Total Rounds</th>
-            <th>Total Options</th>
+            <th>Name Quiz</th>
+            <th>Top 3 Voters</th>
+            <th>Winning option</th>
+            <th>Total tokens spent</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="quiz in quizzes" :key="quiz.id">
             <td>{{ quiz.id }}</td>
             <td>{{ quiz.title }}</td>
-            <td>{{ quiz.rounds.length }}</td>
             <td>
-              {{
-                quiz.rounds.reduce(
-                  (sum, round) => sum + round.length,
-                  0
-                )
-              }}
+                <ul>
+                    <li
+                    v-for="user in topSpendersForQuiz(quiz.id)"
+                        :key="user.username">
+                        {{ user.username }} ({{ user.spent }})
+                    </li>
+                </ul>
             </td>
+
+            <td>{{winningOptionForQuiz(quiz.id)}}</td>
+            <td>{{ tokensSpentForQuiz(quiz.id)}}</td>
           </tr>
         </tbody>
       </table>
@@ -385,10 +389,9 @@ async saveQuiz(id) {
           alert("Quiz saved successfully!");
         } else console.error(data.error);
       } catch(err) { console.error(err); }
-    }
-},
+    },
 
-  getOptionText(quizId, roundIndex, optionIndex) {
+getOptionText(quizId, roundIndex, optionIndex) {
     const quiz = this.quizzes.find(q => q.id === quizId);
     if (!quiz) return "—";
 
@@ -397,8 +400,7 @@ async saveQuiz(id) {
 
     return round[optionIndex] || "—";
   },
-
-  tokensSpentForQuiz(quizId) {
+tokensSpentForQuiz(quizId) {
     let total = 0;
 
     this.users.forEach(user => {
@@ -414,7 +416,7 @@ async saveQuiz(id) {
     return total;
   },
 
-  winningOptionForQuiz(quizId) {
+ winningOptionForQuiz(quizId) {
     const counts = {};
 
     this.users.forEach(user => {
@@ -448,7 +450,6 @@ async saveQuiz(id) {
 
     return this.getOptionText(quizId, roundIndex, optionIndex);
   },
-
   topSpendersForQuiz(quizId) {
   const spenders = this.users
     .filter(u => u.VotedFor)
@@ -462,6 +463,7 @@ async saveQuiz(id) {
     .sort((a, b) => b.spent - a.spent)
     .slice(0, 3);
   return spenders;
+}
 },
 
 computed: {
