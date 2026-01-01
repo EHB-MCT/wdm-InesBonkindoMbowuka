@@ -15,7 +15,6 @@ let db;
 let Users;
 let Quizzes;
 
-
 async function connectDB() {
 	try {
 		
@@ -120,10 +119,9 @@ app.post("/store/buy", async (req, res) => {
 app.post("/vote", async (req, res) => {
   const { username, quizId, round, option, tokensSpent } = req.body;
 
-  if (!username || !option || tokensSpent == null) {
+  if (!username || quizId == null || round == null || option == null || tokensSpent == null) {
     return res.status(400).json({ error: "Missing vote data" });
   }
-
   try {
     const user = await Users.findOne({ username });
 
@@ -134,28 +132,36 @@ app.post("/vote", async (req, res) => {
     if (user.tokens < tokensSpent) {
       return res.status(400).json({ error: "Not enough tokens" });
     }
-
-    const vote = {
-	  quizId,
-      round,
-      option,
-      tokensSpent,
-      timestamp: new Date()
-    };
-
-    await db.collection("Quizzes").updateOne(
-  { id: quizId },
-  {
-    $inc: { "results.totalTokens": tokensSpent },
-    $push: { "results.optionVotes": { option, tokensSpent, username } }
+    const result = await Users.updateOne({ username, tokens: { $gte: tokensSpent } },
+    {
+    $inc: { tokens: -tokensSpent },
+    $push: {
+      VotedFor: {
+        quizId,
+        round,
+        option,
+        tokensSpent,
+        timestamp: new Date()
+      }
+    }
   }
 );
-
-
-    res.json({
-      message: "Vote recorded",
-      vote
-    });
+    await Quizzes.updateOne(
+      { id: quizId },
+      {
+        $inc: { "results.totalTokens": tokensSpent },
+        $push: {
+          "results.votes": {
+            username,
+            round,
+            option,
+            tokensSpent,
+            timestamp: new Date()
+          }
+        }
+      }
+    );
+    res.json({ message: "Vote recorded" });
 
   } catch (err) {
     console.error("Vote error:", err);
@@ -202,17 +208,19 @@ app.post("/quizzes", async (req, res) => {
   const nextId = lastQuiz.length ? lastQuiz[0].id + 1 : 1;
 
   const newQuiz = {
-    id: nextId,
-    title,
-    rounds,
-    startTime: new Date(startTime),
-    endTime: new Date(endTime),
-    createdAt: new Date(),
-    results: {
-      totalTokens: 0,
-      votes: []
-    }
-  };
+  id: nextId,
+  title,
+  rounds,
+  startTime: startTime ? new Date(startTime) : new Date(),
+  endTime: endTime
+    ? new Date(endTime)
+    : new Date(Date.now() + 1000 * 60 * 60),
+  createdAt: new Date(),
+  results: {
+    totalTokens: 0,
+    votes: []
+  }
+};
 
   await Quizzes.insertOne(newQuiz);
   res.json({ message: "Quiz created", quiz: newQuiz });
@@ -234,8 +242,6 @@ app.get("/quizzes/active", async (req, res) => {
   }
 });
 
-
-
 app.put("/quizzes/:id", async (req, res) => {
   const quizId = parseInt(req.params.id);
   const { title, rounds, startTime, endTime } = req.body;
@@ -245,7 +251,6 @@ app.put("/quizzes/:id", async (req, res) => {
     { $set: { title, rounds, startTime: new Date(startTime), endTime: new Date(endTime) } }
   );
 });
-
 
 app.delete("/quizzes/:id", async (req, res) => {
   const quizId = parseInt(req.params.id);
@@ -266,14 +271,13 @@ app.delete("/quizzes/:id", async (req, res) => {
 
 app.use(express.static(path.join(__dirname, "public")));
 
-
 connectDB().then(async () => {
 	app.listen(port, () => {
 		console.log(`Server running on port ${port}`);
 	});
 });
 
-setInterval(async () => {
+/*setInterval(async () => {
   try {
     const allUsers = await Users.find({ username: { $ne: "admin" } }).toArray();
 
@@ -328,7 +332,7 @@ setInterval(async () => {
   } catch (err) {
     console.error("Error simulating dummy users:", err);
   }
-}, 60000);
+}, 60000);*/
 
 
 
