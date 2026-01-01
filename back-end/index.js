@@ -129,23 +129,26 @@ app.post("/vote", async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    if (user.tokens < tokensSpent) {
+    if (user.tokens<tokensSpent) {
       return res.status(400).json({ error: "Not enough tokens" });
     }
-    const result = await Users.updateOne({ username, tokens: { $gte: tokensSpent } },
-    {
-    $inc: { tokens: -tokensSpent },
-    $push: {
-      VotedFor: {
-        quizId,
-        round,
-        option,
-        tokensSpent,
-        timestamp: new Date()
-      }
-    }
-  }
-);
+
+	user.tokens -= tokensSpent;
+
+	if(user.tokens<=10){
+		user.money +=10
+	}
+
+	user.VotedFor.push({
+      quizId,
+      round,
+      option,
+      tokensSpent,
+      timestamp: new Date()
+    });
+
+    await user.save();
+	
     await Quizzes.updateOne(
       { id: quizId },
       {
@@ -161,7 +164,7 @@ app.post("/vote", async (req, res) => {
         }
       }
     );
-    res.json({ message: "Vote recorded" });
+    res.json({ message: "Vote recorded" , tokens: user.tokens, money: user.money  });
 
   } catch (err) {
     console.error("Vote error:", err);
@@ -224,6 +227,25 @@ app.post("/quizzes", async (req, res) => {
 
   await Quizzes.insertOne(newQuiz);
   res.json({ message: "Quiz created", quiz: newQuiz });
+});
+
+app.post("/users/giveTokens", async (req, res) => {
+  try {
+    const allUsers = await Users.find({}).toArray();
+    const bulkOps = allUsers.map(user => ({
+      updateOne: {
+        filter: { _id: user._id },
+        update: { $set: { tokens: 1000 } }
+      }
+    }));
+
+    if (bulkOps.length > 0) {
+      await Users.bulkWrite(bulkOps);
+    }
+    res.json({ message: "All users now have 1000 tokens!" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.get("/quizzes/active", async (req, res) => {

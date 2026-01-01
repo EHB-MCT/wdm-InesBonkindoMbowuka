@@ -9,6 +9,7 @@
     <div v-else>
       <p>Welcome, {{ admin.username }}</p>
       <button @click="logout">Logout</button>
+      <button @click="giveAllUsersTokens">Give All Users 1000 Tokens</button>
 
       <div class="tabs">
         <button :class="{ active: page==='quizzes' }" @click="page='quizzes'">Quizzes</button>
@@ -224,12 +225,20 @@ export default {
       this.fetchUsers();
     }
   },
-  methods: {
+  methods: {  
   logout() {
     localStorage.removeItem("admin");
     this.$router.push("/AdminLogin");
   },
 
+  async giveAllUsersTokens() {
+  try {
+    const res = await fetch("http://localhost:5000/users/giveTokens", { method: "POST" });
+    const data = await res.json();
+    console.log(data.message);
+    await this.fetchUsers();
+  } catch (err) { console.error(err); }
+},
     async fetchQuizzes() {
       try {
         const res = await fetch("http://localhost:5000/quizzes");
@@ -461,7 +470,19 @@ tokensSpentForQuiz(quizId) {
     .sort((a, b) => b.spent - a.spent)
     .slice(0, 3);
   return spenders;
-}
+},
+
+spendTokens(user, amount) {
+    if (!user.tokens) user.tokens = 0;
+    user.tokens -= amount;
+    if (user.tokens < 0) user.tokens = 0;
+  },
+
+checkTokenTopUp(user, threshold = 10, topUpAmount = 100) {
+    if (user.tokens <= threshold) {
+      user.money += topUpAmount;
+    }
+  }
 },
 
 computed: {
