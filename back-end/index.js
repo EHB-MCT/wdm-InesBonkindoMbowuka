@@ -133,21 +133,25 @@ app.post("/vote", async (req, res) => {
       return res.status(400).json({ error: "Not enough tokens" });
     }
 
-	user.tokens -= tokensSpent;
+	const updateFields = {
+      $inc: { tokens: -tokensSpent },
+      $push: {
+        VotedFor: {
+          quizId,
+          round,
+          option,
+          tokensSpent,
+          timestamp: new Date()
+        }
+      }
+    };
 
-	if(user.tokens<=10){
-		user.money +=10
-	}
+    if (user.tokens - tokensSpent <= 10) {
+      updateFields.$inc.money = 10;
+    }
 
-	user.VotedFor.push({
-      quizId,
-      round,
-      option,
-      tokensSpent,
-      timestamp: new Date()
-    });
 
-    await user.save();
+    await Users.updateOne({ username }, updateFields);
 	
     await Quizzes.updateOne(
       { id: quizId },
