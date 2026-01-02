@@ -34,8 +34,7 @@ export default {
     totalTokens: {},
     winningOption: {},
     userVotes: {}, 
-    tokensToSpendByUser: {},
-    currentUser: { username: "admin"}
+    tokensToSpendByUser: {}
   };
   },
 
@@ -246,6 +245,8 @@ export default {
 },
 
 async mounted() {
+  const saved = localStorage.getItem("currentUser");
+  if (saved) this.currentUser = JSON.parse(saved);
   await this.fetchUsers();
   await this.fetchQuizzes();
 

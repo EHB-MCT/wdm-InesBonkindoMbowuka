@@ -41,6 +41,33 @@ app.get("/test", (req, res) => {
 	res.send("Server is working");
 });
 
+app.post("/login", async (req, res) => {
+  const { username, password } = req.body;
+
+  if (!username || !password) return res.status(400).json({ error: "Username and password required" });
+
+  try {
+    const user = await Users.findOne({ username });
+
+    if (!user || user.password !== password) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+
+    const { _id, money, tokens } = user;
+    const role = username.toLowerCase() === "admin" ? "admin" : "user";
+
+    res.json({
+      message: "Login successful",
+      user: { _id, username, money, tokens, role }
+    });
+
+  } catch (err) {
+    console.error("Login error:", err);
+    res.status(500).json({ error: "Server error during login" });
+  }
+});
+
+
 app.get("/users", async (req, res) => {
 	try {
 		const data = await Users.find().toArray();
@@ -226,27 +253,6 @@ app.post("/vote", async (req, res) => {
   }
 });
 
-app.post("/admin/login", async (req, res) => {
-  const { username, password } = req.body;
-
-  if (!username || !password) {
-    return res.status(400).json({ error: "Username and password required" });
-  }
-
-  try {
-    const admin = await Users.findOne({ username: "admin" });
-
-    if (!admin || admin.password !== password) {
-      return res.status(401).json({ error: "Invalid credentials" });
-    }
-
-    res.json({ message: "Login successful", admin: { username: admin.username } });
-  } catch (err) {
-    console.error("Admin login error:", err);
-    res.status(500).json({ error: "Server error during login" });
-  }
-});
-
 app.get("/quizzes", async (req, res) => {
   try {
     const quizzesCollection = db.collection("Quizzes");
@@ -352,128 +358,3 @@ connectDB().then(async () => {
 		console.log(`Server running on port ${port}`);
 	});
 });
-
-/*setInterval(async () => {
-  try {
-    const allUsers = await Users.find({ username: { $ne: "admin" } }).toArray();
-
-    const roundOptions = [
-      ["boyhood", "cutie pie", "horror maze", "summer"],
-      ["cutiness", "bright light", "boyz", "travel"],
-      ["school uniform", "boy uniform", "night horrors", "campy"],
-      ["cute dress", "bones and all", "bright room", "horror scene"]
-    ];
-
-    const tokenPacks = {
-      small: { tokens: 5, price: 5 },
-      medium: { tokens: 15, price: 12 },
-      large: { tokens: 40, price: 30 }
-    };
-
-    for (const user of allUsers) {
-
-      roundOptions.forEach(async (options, roundIndex) => {
-        if (user.tokens > 0) { 
-          const choice = options[Math.floor(Math.random() * options.length)];
-          const tokensToSpend = Math.min(user.tokens, Math.floor(Math.random() * 10) + 1);
-
-          await Users.updateOne(
-            { _id: user._id },
-            {
-              $push: { VotedFor: { round: roundIndex + 1, choice, tokensSpent: tokensToSpend } },
-              $inc: { tokens: -tokensToSpend }
-            }
-          );
-
-          console.log(`User ${user.username} voted for "${choice}" in round ${roundIndex + 1}, spent ${tokensToSpend} tokens`);
-        }
-      });
-
-      if (Math.random() < user.spendingProbability && user.money > 0) {
-        const affordable = Object.entries(tokenPacks)
-          .filter(([id, pack]) => pack.price <= user.money);
-
-        if (affordable.length > 0) {
-          const [packId, pack] = affordable[Math.floor(Math.random() * affordable.length)];
-
-          await Users.updateOne(
-            { _id: user._id },
-            { $inc: { money: -pack.price, tokens: pack.tokens } }
-          );
-
-          console.log(`User ${user.username} bought ${packId} pack for $${pack.price}, gaining ${pack.tokens} tokens`);
-        }
-      }
-    }
-  } catch (err) {
-    console.error("Error simulating dummy users:", err);
-  }
-}, 60000);*/
-
-
-
-
-
-
-
-
-
-//code made to generate 50 users in my dabatase.
-/*async function generateUsers(numUsers = 50) {
-	try {
-		const Users = db.collection("Users");
-		const categories = ["cute", "boyish", "horror", "bright"];
-		const users = [];
-
-		for (let i = 0; i < numUsers; i++) {
-			const tokens = Math.floor(Math.random() * 10) + 1;
-			const baseSpeed = Math.floor(Math.random() * 5) + 1;
-			const likeProbability = +(Math.random() * 0.5 + 0.5).toFixed(2);
-			const dislikeProbability = +(Math.random() * 0.5).toFixed(2);
-
-			users.push({
-				username: `User${i + 1}`,
-				password: "test123",
-				tokens,
-				baseSpeed,
-				preference: categories[Math.floor(Math.random() * categories.length)],
-				likeProbability,
-				dislikeProbability,
-				VotedFor: [],
-			});
-		}
-
-		const result = await Users.insertMany(users);
-		console.log(`Inserted ${result.insertedCount} users`);
-	} catch (err) {
-		console.error("Error generating users:", err);
-	}
-		//await generateUsers(50);
-}*/
-
-
-//update users data 
-/*async function updateUsers() {
-  try {
-    if (!Users) throw new Error("Users collection not initialized");
-
-    const allUsers = await Users.find().toArray();
-
-    for (const user of allUsers) {
-      const update = {};
-
-      if (user.money === undefined) update.money = Math.floor(Math.random() * 50) + 20;
-      if (user.spendingProbability === undefined) update.spendingProbability = +(Math.random() * 0.5 + 0.25).toFixed(2);
-      if (user.VotedFor === undefined) update.VotedFor = [];
-
-      if (Object.keys(update).length > 0) {
-        await Users.updateOne({ _id: user._id }, { $set: update });
-      }
-    }
-
-    console.log("All users updated with new fields where necessary");
-  } catch (err) {
-    console.error("Error updating users:", err);
-  }
-	//await updateUsers();
-}*/
