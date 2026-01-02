@@ -162,6 +162,9 @@ export default {
       const spend = this.tokensToSpend(user, choice);
       if (spend <= 0) continue;
 
+      const delay = this.voteDelay(user, choice);
+    await new Promise(resolve => setTimeout(resolve, delay));
+
       await fetch("http://localhost:5000/vote", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -173,25 +176,34 @@ export default {
           tokensSpent: spend
         })
       });
+      console.log(
+      `[VOTE] ${user.username} voted "${choice}" in ${Math.round(delay)}ms (spent ${spend})`
+    );
     }
-    // After all votes
-    await new Promise(r => setTimeout(r, 200));
     await this.showResults(quiz, roundIndex);
+  },
+
+  voteDelay(user, option) {
+  if (this.matchesPreference(user, option)) {
+    return Math.random() * 400 + 100; 
   }
+  return Math.random() * 2000 + 1000;
+}
 },
 
-  async mounted() {
-    await this.fetchUsers();
+async mounted() {
+  await this.fetchUsers();
   await this.fetchQuizzes();
 
-  // Now activeQuizzes is populated
   for (const quiz of this.activeQuizzes) {
     quiz.rounds.forEach((_, roundIndex) => {
-      this.simulateVoting(quiz, roundIndex);
+      setTimeout(() => {
+        this.simulateVoting(quiz, roundIndex);
+      }, Math.random() * 5000); 
     });
   }
-  },
-};
+}
+}
 </script>
 
 <style scoped>
