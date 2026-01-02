@@ -39,6 +39,37 @@ app.get("/test", (req, res) => {
 	res.send("Server is working");
 });
 
+app.get("/admin/users/:id/profile", async (req, res) => {
+  const user = await Users.findOne({ _id: new ObjectId(req.params.id) });
+  if (!user) return res.status(404).json({ error: "User not found" });
+
+  const votes = user.VotedFor || [];
+
+  const totalSpent = votes.reduce((s, v) => s + (v.tokensSpent || 0), 0);
+  const avgVoteTime =
+    votes.reduce((s, v) => s + (v.voteTime || 0), 0) / (votes.length || 1);
+
+  const optionCounts = {};
+  votes.forEach(v => {
+    const key = `${v.quizId}-${v.round}-${v.option}`;
+    optionCounts[key] = (optionCounts[key] || 0) + v.tokensSpent;
+  });
+
+  const topOptions = Object.entries(optionCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([key]) => key);
+
+  res.json({
+    username: user.username,
+    totalSpent,
+    voteCount: votes.length,
+    avgVoteTime,
+    topOptions
+  });
+});
+
+
 app.post("/Login", async (req, res) => {
 	console.log("Login payload:", req.body);
 	const { username, password} = req.body;

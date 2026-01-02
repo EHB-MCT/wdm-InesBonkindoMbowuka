@@ -16,6 +16,7 @@
 				<button :class="{ active: page === 'users' }" @click="page = 'users'">Users</button>
 				<button :class="{ active: page === 'stats' }" @click="page = 'stats'">Quiz Management</button>
 				<button :class="{ active: page === 'store' }" @click="page = 'store'">Store Management</button>
+				<button :class="{ active: page === 'visual' }" @click="page = 'visual'">User Visualization</button>
 			</div>
 
 			<div v-show="page === 'quizzes'">
@@ -248,6 +249,21 @@
 					</section>
 				</div>
 			</section>
+			<div v-show="page === 'visual'">
+  <h2>User Behavior Visualization</h2>
+
+  <!-- User selection -->
+  <select v-model="selectedUserId" @change="loadProfile">
+    <option disabled value="">Select user</option>
+    <option v-for="u in users" :key="u._id" :value="u._id">
+      {{ u.username }}
+    </option>
+  </select>
+
+  <!-- Canvas -->
+  <canvas ref="canvas" width="600" height="400" style="border:1px solid #ccc;"></canvas>
+</div>
+
 		</div>
 	</div>
 </template>
@@ -266,6 +282,8 @@ export default {
 			purchases: [],
 			newPack: { name: "", tokens: 0, price: 0 },
 			editingPack: null,
+            selectedUserId: "", 
+            selectedProfile: null 
 		};
 	},
 	mounted() {
@@ -445,6 +463,43 @@ export default {
 		removeOption(rIndex, oIndex) {
 			this.newQuiz.rounds[rIndex].options.splice(oIndex, 1);
 		},
+
+		drawPainting(profile) {
+			const canvas = this.$refs.canvas;
+			const ctx = canvas.getContext("2d");
+
+			ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+			const colors = ["#ff4444", "#44ff88", "#4488ff", "#ffcc00"];
+			const chaos = Math.min(profile.totalSpent / 1000, 5);
+
+			for (let i = 0; i < profile.voteCount; i++) {
+				const x = Math.random() * canvas.width;
+				const y = Math.random() * canvas.height;
+
+				const radius = 5 + chaos * 8;
+				const color = colors[i % colors.length];
+
+				ctx.beginPath();
+
+				if (profile.avgVoteTime < 1.5) {
+					ctx.rect(x, y, radius * 2, radius * 2);
+				} else {
+					ctx.arc(x, y, radius, 0, Math.PI * 2);
+				}
+
+				ctx.fillStyle = color;
+				ctx.fill();
+			}
+		},
+
+        async loadProfile() {
+  const res = await fetch(
+    `http://localhost:5000/admin/users/${this.selectedUserId}/profile`
+  );
+  const profile = await res.json();
+  this.drawPainting(profile);
+},
 
 		async createQuiz() {
 			try {
