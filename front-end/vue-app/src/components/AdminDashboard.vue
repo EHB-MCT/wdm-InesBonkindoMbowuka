@@ -252,15 +252,13 @@
 			<div v-show="page === 'visual'">
   <h2>User Behavior Visualization</h2>
 
-  <!-- User selection -->
-  <select v-model="selectedUserId" @change="loadProfile">
+  <select v-model="selectedUsername" @change="loadProfile">
     <option disabled value="">Select user</option>
-    <option v-for="u in users" :key="u._id" :value="u._id">
+    <option v-for="u in users" :key="u._id" :value="u.username">
       {{ u.username }}
     </option>
   </select>
 
-  <!-- Canvas -->
   <canvas ref="canvas" width="600" height="400" style="border:1px solid #ccc;"></canvas>
 </div>
 
@@ -282,7 +280,7 @@ export default {
 			purchases: [],
 			newPack: { name: "", tokens: 0, price: 0 },
 			editingPack: null,
-            selectedUserId: "", 
+            selectedUsername: "", 
             selectedProfile: null 
 		};
 	},
@@ -464,42 +462,74 @@ export default {
 			this.newQuiz.rounds[rIndex].options.splice(oIndex, 1);
 		},
 
-		drawPainting(profile) {
-			const canvas = this.$refs.canvas;
-			const ctx = canvas.getContext("2d");
+drawPainting(user) {
+  const canvas = this.$refs.canvas;
+  const ctx = canvas.getContext("2d");
 
-			ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-			const colors = ["#ff4444", "#44ff88", "#4488ff", "#ffcc00"];
-			const chaos = Math.min(profile.totalSpent / 1000, 5);
+  function drawStar(cx, cy, spikes, outerRadius, innerRadius, color) {
+    let rot = Math.PI / 2 * 3;
+    let x = cx;
+    let y = cy;
+    let step = Math.PI / spikes;
 
-			for (let i = 0; i < profile.voteCount; i++) {
-				const x = Math.random() * canvas.width;
-				const y = Math.random() * canvas.height;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - outerRadius);
+    for (let i = 0; i < spikes; i++) {
+      x = cx + Math.cos(rot) * outerRadius;
+      y = cy + Math.sin(rot) * outerRadius;
+      ctx.lineTo(x, y);
+      rot += step;
 
-				const radius = 5 + chaos * 8;
-				const color = colors[i % colors.length];
+      x = cx + Math.cos(rot) * innerRadius;
+      y = cy + Math.sin(rot) * innerRadius;
+      ctx.lineTo(x, y);
+      rot += step;
+    }
+    ctx.lineTo(cx, cy - outerRadius);
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+  }
 
-				ctx.beginPath();
+  const votes = Array.isArray(user.VotedFor) ? user.VotedFor : [];
 
-				if (profile.avgVoteTime < 1.5) {
-					ctx.rect(x, y, radius * 2, radius * 2);
-				} else {
-					ctx.arc(x, y, radius, 0, Math.PI * 2);
-				}
+  votes.forEach((vote) => {
+    const x = Math.random() * canvas.width;
+    const y = Math.random() * canvas.height;
+    const radius = 8;
 
-				ctx.fillStyle = color;
-				ctx.fill();
-			}
-		},
+    if (vote.option === user.preference) {
+      drawStar(x, y, 5, radius, radius / 2, "#44ff88");
+    } else if (Math.random() < user.dislikeProbability) {
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.fillStyle = "#ff4444";
+      ctx.fill();
+    } else {
+      ctx.fillStyle = "#4488ff";
+      ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2);
+    }
+  });
+}
+,
 
-        async loadProfile() {
-  const res = await fetch(
-    `http://localhost:5000/admin/users/${this.selectedUserId}/profile`
-  );
+async loadProfile() {
+  if (!this.selectedUsername) return;
+
+  const res = await fetch(`http://localhost:5000/users/${this.selectedUsername}`);
   const profile = await res.json();
+
+  if (profile.error) {
+    console.warn("User not found:", this.selectedUsername);
+    return;
+  }
+
+  console.log("Loaded profile:", profile);
   this.drawPainting(profile);
-},
+}
+,
 
 		async createQuiz() {
 			try {
