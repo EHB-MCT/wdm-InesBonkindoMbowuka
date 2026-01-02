@@ -15,12 +15,7 @@
         <h2>{{ pack.name }}</h2>
         <p>Tokens: {{ pack.tokens }}</p>
         <p>Price: ${{ pack.price }}</p>
-        <button 
-          :disabled="user.money < pack.price"
-          @click="buyPack(pack.id)"
-        >
-          Buy
-        </button>
+        <button :disabled="user.money < pack.price" @click="buyPack(pack._id, pack.name)">Buy</button>
       </div>
 
       <div v-if="message" class="message">{{ message }}</div>
@@ -54,7 +49,8 @@ export default {
         this.message = "Error fetching admin user";
       }
     },
-    async buyPack(packId) {
+    async buyPack(packId,name) {
+        console.log(this.user.username, "Bought the", name);
       try {
         const res = await fetch("http://localhost:5000/store/buy", {
           method: "POST",

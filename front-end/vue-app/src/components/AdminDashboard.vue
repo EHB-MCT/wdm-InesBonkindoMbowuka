@@ -14,8 +14,8 @@
       <div class="tabs">
         <button :class="{ active: page==='quizzes' }" @click="page='quizzes'">Quizzes</button>
         <button :class="{ active: page==='users' }" @click="page='users'">Users</button>
-         <button :class="{ active: page==='stats' }" @click="page='stats'">Stats</button>
-         <button :class="{ active: page==='store' }" @click="page='store'">Store</button>
+         <button :class="{ active: page==='stats' }" @click="page='stats'">Quiz Management</button>
+         <button :class="{ active: page==='store' }" @click="page='store'">Store Management</button>
       </div>
 
       <div v-show="page==='quizzes'">
@@ -342,6 +342,55 @@ async fetchPurchases() {
 packPurchaseCount(packId) {
   return this.purchases.filter(p => p.packId === packId).length;
 },
+
+  startEditPack(pack) {
+    if(!pack._id) return console.error("Pack has no id")
+    this.editingPack = { ...pack };
+  },
+
+  async savePack() {
+    if (!this.editingPack) return;
+
+    try {
+      const res = await fetch(`http://localhost:5000/store/packs/${this.editingPack._id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(this.editingPack)
+      });
+
+      if (res.ok) {
+        this.storePacks = this.storePacks.map(p =>
+          p._id === this.editingPack._id ? { ...this.editingPack } : p
+        );
+        this.editingPack = null;
+      } else {
+        const data = await res.json();
+        console.error(data.error || "Failed to save pack");
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  },
+
+  async createPack() {
+    try {
+      const res = await fetch("http://localhost:5000/store/packs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(this.newPack)
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        this.storePacks.push(data.pack);
+        this.newPack = { name: "", tokens: 0, price: 0 };
+      } else {
+        console.error(data.error || "Failed to create pack");
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  },
 
 async deletePack(id) {
   if (!confirm("Delete this pack?")) return;

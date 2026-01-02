@@ -151,13 +151,46 @@ export default {
   this.winningOption[quiz.id][roundIndex] = winner;
 
   await this.fetchUsers();
-}
 },
 
-  mounted() {
-    this.fetchUsers();
-    this.fetchQuizzes();
+ async simulateVoting(quiz, roundIndex) {
+    for (const user of this.users) {
+      if (user.tokens <= 0) continue;
+      const options = quiz.rounds[roundIndex];
+      const choice = this.weightedChoice(user, options);
+      const optionIndex = options.indexOf(choice);
+      const spend = this.tokensToSpend(user, choice);
+      if (spend <= 0) continue;
+
+      await fetch("http://localhost:5000/vote", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: user.username,
+          quizId: quiz.id,
+          round: roundIndex,
+          option: optionIndex,
+          tokensSpent: spend
+        })
+      });
+    }
+    // After all votes
+    await new Promise(r => setTimeout(r, 200));
+    await this.showResults(quiz, roundIndex);
   }
+},
+
+  async mounted() {
+    await this.fetchUsers();
+  await this.fetchQuizzes();
+
+  // Now activeQuizzes is populated
+  for (const quiz of this.activeQuizzes) {
+    quiz.rounds.forEach((_, roundIndex) => {
+      this.simulateVoting(quiz, roundIndex);
+    });
+  }
+  },
 };
 </script>
 
