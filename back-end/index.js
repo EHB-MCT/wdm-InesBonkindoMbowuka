@@ -10,6 +10,8 @@ const port = process.env.PORT;
 const url = process.env.MONGO_URL;
 const client = new MongoClient(url);
 const { ObjectId } = require("mongodb");
+const bcrypt = require("bcrypt");
+
 
 let db;
 let Users;
@@ -40,14 +42,20 @@ app.get("/test", (req, res) => {
 app.post("/Login", async (req, res) => {
 	const { username, password } = req.body;
 
-	if (!username || !password) return res.status(400).json({ error: "Username and password required" });
+	if (!username || !password)
+		return res.status(400).json({ error: "Username and password required" });
 
 	try {
 		const user = await Users.findOne({ username });
 
-		if (!user || user.password !== password) {
+		if (!user) {
 			return res.status(401).json({ error: "Invalid credentials" });
 		}
+
+		const isMatch = await bcrypt.compare(password, user.password);
+    	if (!isMatch) {
+     	 return res.status(400).json({ message: "Invalid username or password" });
+    	}
 
 		const { _id, money, tokens } = user;
 		const role = username.toLowerCase() === "admin" ? "admin" : "user";
@@ -75,9 +83,11 @@ app.post("/Register", async (req, res) => {
 			return res.status(400).json({ error: "Username already exists" });
 		}
 
+		const hashedPassword = await bcrypt.hash(password, 10); 
+
 		const newUser = {
 			username,
-			password,
+			password: hashedPassword,
 			tokens: 100,
 			money: 0,
 			role: "user",

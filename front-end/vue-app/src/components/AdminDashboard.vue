@@ -528,7 +528,7 @@ export default {
 									startTime: payload.startTime,
 									endTime: payload.endTime,
 									rounds: payload.rounds.map((r) => ({ options: r })),
-							  }
+                                }
 							: q
 					);
 					this.editingQuiz = null;
