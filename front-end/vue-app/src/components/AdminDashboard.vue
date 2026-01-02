@@ -109,14 +109,20 @@
 							<tr>
 								<th>Username</th>
 								<th>Tokens</th>
-								<th>Total Tokens Spent</th>
+								<th>Tokens Spent</th>
+								<th>Top 3 Most Spent On</th>
 							</tr>
 						</thead>
 						<tbody>
-							<tr v-for="user in users" :key="user._id">
+							<tr v-for="user in rankedUsers" :key="user._id">
 								<td>{{ user.username }}</td>
 								<td>{{ user.tokens }}</td>
-								<td>{{ totalTokensSpent(user) }}</td>
+								<td>{{ user.totalSpent }}</td>
+								<td>
+									<ul>
+										<li v-for="option in user.topOptions" :key="option">{{ option }}</li>
+									</ul>
+								</td>
 							</tr>
 						</tbody>
 					</table>
@@ -527,8 +533,7 @@ export default {
 									title: payload.title,
 									startTime: payload.startTime,
 									endTime: payload.endTime,
-									rounds: payload.rounds.map((r) => ({ options: r })),
-                                }
+									rounds: payload.rounds.map((r) => ({ options: r })),}
 							: q
 					);
 					this.editingQuiz = null;
@@ -619,6 +624,27 @@ export default {
 				user.money += topUpAmount;
 			}
 		},
+
+		top3Options(user) {
+			if (!user.VotedFor) return [];
+
+			const counts = {};
+
+			user.VotedFor.forEach((vote) => {
+				if (vote.quizId == null || vote.round == null || vote.option == null) return;
+
+				const optionText = this.getOptionText(vote.quizId, vote.round, vote.option);
+
+				if (optionText === "—") return;
+
+				counts[optionText] = (counts[optionText] || 0) + (vote.tokensSpent || 0);
+			});
+
+			return Object.entries(counts)
+				.sort(([, a], [, b]) => b - a)
+				.slice(0, 3)
+				.map(([option]) => option);
+		},
 	},
 
 	computed: {
@@ -636,6 +662,16 @@ export default {
 				if (!q.endTime) return false;
 				return new Date(q.endTime) <= now;
 			});
+		},
+
+		rankedUsers() {
+			return [...this.users]
+				.map((u) => ({
+					...u,
+					totalSpent: this.totalTokensSpent(u),
+					topOptions: this.top3Options(u),
+				}))
+				.sort((a, b) => b.totalSpent - a.totalSpent);
 		},
 	},
 };
