@@ -34,11 +34,7 @@ export default {
   data() {
     return {
       user: null,
-      packs: [
-        { id: "small", name: "Small Pack", tokens: 5, price: 5 },
-        { id: "medium", name: "Medium Pack", tokens: 15, price: 12 },
-        { id: "large", name: "Large Pack", tokens: 40, price: 30 }
-      ],
+      packs: [],
       message: ""
     };
   },
@@ -85,10 +81,25 @@ export default {
         console.error(err);
         this.message = "Error contacting server";
       }
+    },
+
+ async fetchPacks() {
+    try {
+      const res = await fetch("http://localhost:5000/store/packs");
+      if (!res.ok) throw new Error("Failed to fetch packs");
+      const data = await res.json();
+      this.packs = data;
+    } catch (err) {
+      console.error(err);
+      this.message = "Error fetching store packs";
     }
   },
+
+  },
+
   mounted() {
     this.fetchAdmin();
+    this.fetchPacks();
   }
 };
 </script>

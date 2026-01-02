@@ -15,6 +15,7 @@
         <button :class="{ active: page==='quizzes' }" @click="page='quizzes'">Quizzes</button>
         <button :class="{ active: page==='users' }" @click="page='users'">Users</button>
          <button :class="{ active: page==='stats' }" @click="page='stats'">Stats</button>
+         <button :class="{ active: page==='store' }" @click="page='store'">Store</button>
       </div>
 
       <div v-show="page==='quizzes'">
@@ -198,6 +199,67 @@
       </table>
     </div>
   </section>
+  <section>
+    <div v-show="page === 'store'">
+  <section>
+    <h2>Store Packs</h2>
+
+    <table class="users-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Tokens</th>
+          <th>Price</th>
+          <th>Times Bought</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="pack in storePacks" :key="pack._id">
+          <td v-if="editingPack && editingPack._id === pack._id">
+            <input v-model="editingPack.name" />
+          </td>
+          <td v-else>{{ pack.name }}</td>
+
+          <td v-if="editingPack && editingPack._id === pack._id">
+            <input type="number" v-model.number="editingPack.tokens" />
+          </td>
+          <td v-else>{{ pack.tokens }}</td>
+
+          <td v-if="editingPack && editingPack._id === pack._id">
+            <input type="number" v-model.number="editingPack.price" />
+          </td>
+          <td v-else>{{ pack.price }}</td>
+
+          <td>{{ packPurchaseCount(pack._id) }}</td>
+
+         <td>
+  <template v-if="editingPack && editingPack._id === pack._id">
+    <button @click="savePack">Save</button>
+    <button @click="editingPack = null">Cancel</button>
+  </template>
+
+  <template v-else>
+    <button @click="startEditPack(pack)">Edit</button>
+    <button @click="deletePack(pack._id)">Delete</button>
+  </template>
+</td>
+
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>Create New Pack</h2>
+    <input v-model="newPack.name" placeholder="Pack Name" />
+    <input type="number" v-model.number="newPack.tokens" placeholder="Tokens" />
+    <input type="number" v-model.number="newPack.price" placeholder="Price" />
+    <button @click="createPack">Create Pack</button>
+  </section>
+</div>
+
+  </section>
 </div>
 
     </div>
@@ -214,6 +276,11 @@ export default {
       users: [],
       newQuiz: { title: "", startTime:"", endTime:"",rounds: [{ options: [""] }] },
       editingQuiz: null,
+      storePacks: [],
+      purchases: [],
+      newPack: { name: "", tokens: 0, price: 0 },
+      editingPack: null,
+
     };
   },
   mounted() {
@@ -223,6 +290,9 @@ export default {
       this.admin = JSON.parse(stored);
       this.fetchQuizzes();
       this.fetchUsers();
+      this.fetchStorePacks();
+      this.fetchPurchases();
+
     }
   },
   methods: {  
@@ -256,6 +326,39 @@ export default {
         this.users = await res.json();
       } catch (err) { console.error(err); }
     },
+
+    async fetchStorePacks() {
+  const res = await fetch("http://localhost:5000/store/packs");
+  this.storePacks = await res.json();
+},
+
+async fetchPurchases() {
+  const res = await fetch("http://localhost:5000/store/purchases/recent");
+  this.purchases = await res.json();
+},
+
+packPurchaseCount(packId) {
+  return this.purchases.filter(p => p.packId === packId).length;
+},
+
+async deletePack(id) {
+  if (!confirm("Delete this pack?")) return;
+
+  try {
+    const res = await fetch(`http://localhost:5000/store/packs/${id}`, {
+      method: "DELETE"
+    });
+
+    if (res.ok) {
+      this.storePacks = this.storePacks.filter(p => p._id !== id);
+    } else {
+      console.error("Failed to delete pack");
+    }
+  } catch (err) {
+    console.error(err);
+  }
+},
+
 
   totalTokensSpent(user) {
     if (!user.VotedFor) return 0;

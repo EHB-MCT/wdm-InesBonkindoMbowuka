@@ -14,6 +14,9 @@ const { ObjectId } = require("mongodb");
 let db;
 let Users;
 let Quizzes;
+let StorePacks;
+let Purchases;
+
 
 async function connectDB() {
 	try {
@@ -25,6 +28,9 @@ async function connectDB() {
 		db = client.db("Voting");
 		Users = db.collection("Users");
 		Quizzes = db.collection("Quizzes");
+		StorePacks = db.collection("StorePacks");
+	 	Purchases = db.collection("Purchases"); 
+
 
 	} catch (err) {
 		console.error("Error connecting to MongoDB:", err);
@@ -70,23 +76,12 @@ app.get("/users/:username", async (req, res) => {
 app.post("/store/buy", async (req, res) => {
   const { username, packId } = req.body;
 
-  const tokenPacks = {
-    small: { tokens: 5, price: 5 },
-    medium: { tokens: 15, price: 12 },
-    large: { tokens: 40, price: 30 }
-  };
-
-  const pack = tokenPacks[packId];
-  if (!pack) {
-    return res.status(400).json({ error: "Invalid pack" });
-  }
-
   try {
     const user = await Users.findOne({ username });
+    if (!user) return res.status(404).json({ error: "User not found" });
 
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
+    const pack = await StorePacks.findOne({ _id: new ObjectId(packId) });
+    if (!pack) return res.status(400).json({ error: "Pack not found" });
 
     if (user.money < pack.price) {
       return res.status(400).json({ error: "Not enough money" });
@@ -94,27 +89,82 @@ app.post("/store/buy", async (req, res) => {
 
     await Users.updateOne(
       { username },
-      {
-        $inc: {
-          money: -pack.price,
-          tokens: pack.tokens
-        }
-      }
+      { $inc: { money: -pack.price, tokens: pack.tokens } }
     );
+
+    await Purchases.insertOne({
+      username,
+      packId: pack._id,
+      packName: pack.name,
+      tokens: pack.tokens,
+      moneySpent: pack.price,
+      timestamp: new Date()
+    });
 
     res.json({
       message: "Purchase successful",
-      packId,
       tokensGained: pack.tokens,
       moneySpent: pack.price
     });
 
   } catch (err) {
-    console.error("Purchase error:", err);
+    console.error(err);
     res.status(500).json({ error: "Server error during purchase" });
   }
 });
 
+app.get("/store/packs", async (req, res) => {
+  try {
+    const packs = await StorePacks.find().toArray();
+    res.json(packs);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+app.post("/store/packs", async (req, res) => {
+  const { name, tokens, price } = req.body;
+
+  try {
+    const result = await StorePacks.insertOne({ name, tokens, price });
+    res.json({
+      message: "Pack created",
+      pack: { _id: result.insertedId, name, tokens, price }
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put("/store/packs/:id", async (req, res) => {
+  const id = req.params.id;
+  const { name, tokens, price } = req.body;
+  try {
+    await StorePacks.updateOne(
+      { _id: new ObjectId(id) },
+      { $set: { name, tokens, price } }
+    );
+    res.json({ message: "Pack updated" });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.delete("/store/packs/:id", async (req, res) => {
+  const id = req.params.id;
+  try {
+    await StorePacks.deleteOne({ _id: new ObjectId(id) });
+    res.json({ message: "Pack deleted" });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.get("/store/purchases/recent", async (req, res) => {
+  try {
+    const recent = await Purchases.find().sort({ timestamp: -1 }).limit(20).toArray();
+    res.json(recent);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 app.post("/vote", async (req, res) => {
   const { username, quizId, round, option, tokensSpent } = req.body;
