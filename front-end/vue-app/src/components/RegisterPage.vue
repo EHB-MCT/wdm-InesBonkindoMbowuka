@@ -3,6 +3,8 @@
 		<h1>Register</h1>
 		<input v-model="username" placeholder="Username" />
 		<input type="password" v-model="password" placeholder="Password" />
+        <p>Enter code if admin.</p>
+        <input v-model="adminCode" type="password" placeholder="Admin code (optional)" />
 		<button @click="registerUser">Register</button>
 
 		<p v-if="message" class="message">{{ message }}</p>
@@ -17,6 +19,7 @@ export default {
 			username: "",
 			password: "",
 			message: "",
+            adminCode: ""
 		};
 	},
 	methods: {
@@ -30,7 +33,7 @@ export default {
 				const res = await fetch("http://localhost:5000/Register", {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({ username: this.username, password: this.password }),
+					body: JSON.stringify({ username: this.username, password: this.password, adminCode: this.adminCode }),
 				});
 
 				const data = await res.json();

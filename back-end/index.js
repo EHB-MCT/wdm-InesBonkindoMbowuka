@@ -40,7 +40,9 @@ app.get("/test", (req, res) => {
 });
 
 app.post("/Login", async (req, res) => {
-	const { username, password } = req.body;
+	console.log("Login payload:", req.body);
+	const { username, password} = req.body;
+	const adminCode = req.body.adminCode || "";
 
 	if (!username || !password)
 		return res.status(400).json({ error: "Username and password required" });
@@ -54,11 +56,14 @@ app.post("/Login", async (req, res) => {
 
 		const isMatch = await bcrypt.compare(password, user.password);
     	if (!isMatch) {
-     	 return res.status(400).json({ message: "Invalid username or password" });
+     	 return res.status(401).json({ message: "Invalid username or password" });
     	}
 
-		const { _id, money, tokens } = user;
-		const role = username.toLowerCase() === "admin" ? "admin" : "user";
+		if (user.role === "admin" && adminCode !== process.env.ADMIN_SECRET) {
+			return res.status(403).json({ error: "Invalid admin code" });
+		}
+
+		const { _id, money, tokens, role } = user;
 
 		res.json({
 			message: "Login successful",
@@ -71,7 +76,7 @@ app.post("/Login", async (req, res) => {
 });
 
 app.post("/Register", async (req, res) => {
-	const { username, password } = req.body;
+	const { username, password, adminCode } = req.body;
 
 	if (!username || !password) {
 		return res.status(400).json({ error: "Username and password required" });
@@ -84,17 +89,18 @@ app.post("/Register", async (req, res) => {
 		}
 
 		const hashedPassword = await bcrypt.hash(password, 10); 
+		const role = adminCode === process.env.ADMIN_SECRET ? "admin" : "user";
 
 		const newUser = {
 			username,
 			password: hashedPassword,
 			tokens: 100,
 			money: 0,
-			role: "user",
+			role,
 			VotedFor: [],
 		};
 
-		const result = await Users.insertOne(newUser);
+		await Users.insertOne(newUser);
 
 		res.json({
 			message: "User registered successfully",
