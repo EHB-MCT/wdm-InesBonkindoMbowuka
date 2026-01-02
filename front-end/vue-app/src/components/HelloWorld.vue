@@ -1,35 +1,27 @@
 <template>
   <div class="quiz-container">
-    <h1 v-if="activeQuizzes.length">Active Quizzes</h1>
-    <h1 v-else>Loading quiz…</h1>
-    <div v-for="quiz in activeQuizzes" :key="quiz.id" class="quiz-block">
-      <div
-        v-for="(options, roundIndex) in quiz.rounds"
-        :key="roundIndex"
-        class="question"
-      >
-        <h2> {{ quiz.title }}</h2>
-
-        <div v-for="option in options" :key="option" class="option">
+    <section>
+  <h2>Ongoing Quizzes</h2>
+  <div v-for="quiz in activeQuizzes" :key="quiz.id" class="quiz-block">
+    <h3>{{ quiz.title }}</h3>
+    <div v-for="(round, rIndex) in quiz.rounds" :key="rIndex" class="round">
+      <h4>Round {{ rIndex + 1 }}</h4>
+      <div v-for="(option, oIndex) in round" :key="oIndex" class="option">
+        <label>
+          <input type="radio"
+                 :name="'quiz-' + quiz.id + '-round-' + rIndex"
+                 :value="option"
+                 v-model="userVotes[quiz.id][rIndex]" />
           {{ option }}
-        </div>
-
-        <button @click="showResults(quiz, roundIndex)">
-          Show Results
-        </button>
-
-        <div class="total-tokens">
-          Total Tokens Spent: {{ totalTokens[quiz.id]?.[roundIndex] || 0 }}
-        </div>
-
-        <div
-          class="winning-option"
-          v-if="winningOption[quiz.id]?.[roundIndex]"
-        >
-          Winning Option: {{ winningOption[quiz.id][roundIndex] }}
-        </div>
+        </label>
       </div>
+      <input type="number" v-model.number="tokensToSpendByUser[quiz.id][rIndex]" placeholder="Tokens to spend" min="1" />
+      <button @click="submitAdminVote(quiz.id, rIndex)">Vote</button>
+      <p>Total Tokens Spent: {{ totalTokens[quiz.id]?.[rIndex] || 0 }}</p>
+      <p>Winning Option: {{ winningOption[quiz.id]?.[rIndex] || "—" }}</p>
     </div>
+  </div>
+</section>
   </div>
 </template>
 <script>
@@ -40,7 +32,10 @@ export default {
     users: [],
     activeQuizzes: [],
     totalTokens: {},
-    winningOption: {}
+    winningOption: {},
+    userVotes: {}, 
+    tokensToSpendByUser: {},
+    currentUser: { username: "admin"}
   };
   },
 
@@ -64,10 +59,69 @@ export default {
       return preferencePatterns[user.preference].test(option);
     },
 
-    async fetchQuizzes() {
-    const res = await fetch("http://localhost:5000/quizzes/active");
-    this.activeQuizzes=await res.json();
-  },
+   async fetchQuizzes() {
+      try {
+        const res = await fetch("http://localhost:5000/quizzes/active");
+        this.activeQuizzes = await res.json();
+        this.initVoteObjects();
+      } catch (err) {
+        console.error("Failed to fetch quizzes:", err);
+      }
+    },
+
+
+
+  initVoteObjects() {
+      this.activeQuizzes.forEach(quiz => {
+        if (!this.userVotes[quiz.id]) this.userVotes[quiz.id] = {};
+        if (!this.tokensToSpendByUser[quiz.id]) this.tokensToSpendByUser[quiz.id] = {};
+        quiz.rounds.forEach((round, rIndex) => {
+          if (this.userVotes[quiz.id][rIndex] === undefined) this.userVotes[quiz.id][rIndex] = null;
+          if (this.tokensToSpendByUser[quiz.id][rIndex] === undefined) this.tokensToSpendByUser[quiz.id][rIndex] = 0;
+        });
+      });
+    },
+  async submitAdminVote(quizId, roundIndex) {
+  const option = this.userVotes[quizId][roundIndex];
+  const tokens = this.tokensToSpendByUser[quizId][roundIndex];
+
+  if (!option || !tokens || tokens <= 0) return alert("Select an option and enter tokens!");
+  if (tokens > this.currentUser.tokens) return alert("Not enough tokens!");
+
+  const round = this.activeQuizzes.find(q => q.id === quizId).rounds[roundIndex];
+  const optionIndex = round.indexOf(option);
+  this.currentUser.tokens -= tokens;
+  await fetch("http://localhost:5000/vote", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      username: this.currentUser.username,
+      quizId,
+      round: roundIndex,
+      option: optionIndex,
+      tokensSpent: tokens
+    })
+  });
+  if (!this.totalTokens[quizId]) this.totalTokens[quizId] = {};
+  if (!this.winningOption[quizId]) this.winningOption[quizId] = {};
+
+  this.totalTokens[quizId][roundIndex] = (this.totalTokens[quizId][roundIndex] || 0) + tokens;
+
+  const votesPerOption = {};
+  this.users.forEach(u => {
+    u.VotedFor?.forEach(v => {
+      if (v.quizId === quizId && v.round === roundIndex) {
+        votesPerOption[v.option] = (votesPerOption[v.option] || 0) + v.tokensSpent;
+      }
+    });
+  });
+  votesPerOption[optionIndex] = (votesPerOption[optionIndex] || 0) + tokens;
+
+  const winnerIndex = Number(Object.entries(votesPerOption).sort((a, b) => b[1]-a[1])[0][0]);
+  this.winningOption[quizId][roundIndex] = round[winnerIndex];
+
+  alert(`Voted for "${option}" spending ${tokens} tokens`);
+},
 
     tokensToSpend(user, option) {
       if (this.matchesPreference(user, option)) {

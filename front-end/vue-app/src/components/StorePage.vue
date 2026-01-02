@@ -1,25 +1,19 @@
 <template>
   <div class="store-container">
-    <h1>Token Store (Admin)</h1>
+    <h1>Token Store</h1>
 
-    <div v-if="!user">
-      <p>Loading admin user...</p>
-    </div>
-
-    <div v-else>
-      <p>Username: {{ user.username }}</p>
-      <p>Money: ${{ user.money }}</p>
-      <p>Tokens: {{ user.tokens }}</p>
-
+    <div class="packs-grid">
       <div class="pack" v-for="pack in packs" :key="pack.id">
         <h2>{{ pack.name }}</h2>
         <p>Tokens: {{ pack.tokens }}</p>
         <p>Price: ${{ pack.price }}</p>
-        <button :disabled="user.money < pack.price" @click="buyPack(pack._id, pack.name)">Buy</button>
+        <button :disabled="pack.price > 100" @click="buyPack(pack._id, pack.name)">
+          Buy
+        </button>
       </div>
-
-      <div v-if="message" class="message">{{ message }}</div>
     </div>
+
+    <div v-if="message" class="message">{{ message }}</div>
   </div>
 </template>
 
@@ -72,7 +66,7 @@ export default {
           this.user.tokens += Number(data.tokensGained);
         }
 
-        this.message = `Purchased ${data.pack}! Tokens gained: ${data.tokensGained}, Money spent: $${data.spent}`;
+        this.message = `You purchased the ${name} and gained ${data.tokensGained} tokens.`;
       } catch (err) {
         console.error(err);
         this.message = "Error contacting server";
@@ -106,6 +100,13 @@ export default {
   flex-direction: column;
   align-items: center;
   gap: 20px;
+}
+
+.packs-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: center;
 }
 
 .pack {
