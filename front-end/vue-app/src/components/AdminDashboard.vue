@@ -499,8 +499,10 @@ drawPainting(user) {
     const x = Math.random() * canvas.width;
     const y = Math.random() * canvas.height;
     const radius = 8;
+    const optionText = (vote.option ?? "").toString();
+    const preference = (user.preference ?? "").toString();
 
-    if (vote.option === user.preference) {
+    if (optionText.toLowerCase().includes(preference.toLowerCase())) {
       drawStar(x, y, 5, radius, radius / 2, "#44ff88");
     } else if (Math.random() < user.dislikeProbability) {
       ctx.beginPath();
