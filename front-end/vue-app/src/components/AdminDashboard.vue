@@ -199,7 +199,10 @@
       </table>
     </div>
   </section>
-  <section>
+  
+</div>
+
+ <section>
     <div v-show="page === 'store'">
   <section>
     <h2>Store Packs</h2>
@@ -260,7 +263,6 @@
 </div>
 
   </section>
-</div>
 
     </div>
   </div>
