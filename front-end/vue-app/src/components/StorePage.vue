@@ -107,7 +107,7 @@ export default {
 }
 
 .pack {
-	border: 1px solid #42b983;
+	border: 1px solid #F8BBD0;
 	padding: 15px;
 	width: 250px;
 	text-align: center;
@@ -115,8 +115,8 @@ export default {
 }
 
 button {
-	background-color: #42b983;
-	color: white;
+	background-color: #F8BBD0;
+    color: #FFF8F0;
 	padding: 8px 12px;
 	border: none;
 	border-radius: 5px;
@@ -131,6 +131,6 @@ button:disabled {
 .message {
 	margin-top: 20px;
 	font-weight: bold;
-	color: #d9534f;
+	color:chartreuse;
 }
 </style>

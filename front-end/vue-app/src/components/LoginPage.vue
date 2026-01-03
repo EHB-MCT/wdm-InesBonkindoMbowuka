@@ -59,4 +59,26 @@ export default {
 	color: red;
 	font-weight: bold;
 }
+
+.register-container {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 10px;
+	margin-top: 50px;
+}
+
+input {
+	padding: 8px;
+	width: 250px;
+	border-radius: 5px;
+}
+
+button {
+	padding: 8px 16px;
+	background-color: #FFF8F0;
+	border: none;
+	border-radius: 5px;
+	cursor: pointer;
+}
 </style>

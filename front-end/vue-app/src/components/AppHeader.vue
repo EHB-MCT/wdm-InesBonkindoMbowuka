@@ -12,14 +12,13 @@
 
 <script>
 export default {
-	nmae: "AppHeader",
+	name: "AppHeader",
 	data() {
-		return { currentUser: "null" };
+		return { currentUser: null };
 	},
 
 	created() {
-		const user = localStorage.getItem("currentUser");
-		if (user) this.currentUser = JSON.parse(user);
+		this.loadUser();
 	},
 
 	computed: {
@@ -30,12 +29,25 @@ export default {
 
 	watch: {
 		$route() {
-			const user = localStorage.getItem("currentUser");
-			this.currentUser = user ? JSON.parse(user) : null;
+			this.loadUser();
 		},
 	},
 
 	methods: {
+		loadUser() {
+			try {
+				const userStr = localStorage.getItem("currentUser");
+				if (userStr && userStr !== "undefined") {
+					this.currentUser = JSON.parse(userStr);
+				} else {
+					this.currentUser = null;
+				}
+			} catch (err) {
+				console.warn("Failed to parse currentUser from localStorage:", err);
+				this.currentUser = null;
+			}
+		},
+
 		logout() {
 			localStorage.removeItem("currentUser");
 			this.currentUser = null;
@@ -44,6 +56,7 @@ export default {
 	},
 };
 </script>
+
 
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Coiny&family=Wix+Madefor+Text:ital,wght@0,400..800;1,400..800&display=swap');
@@ -62,7 +75,7 @@ export default {
 
 .header nav{
   display: flex;
-  gap: 200px;
+  gap: 150px;
   align-items: center;
 }
 button{

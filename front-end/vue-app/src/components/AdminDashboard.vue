@@ -8,7 +8,6 @@
 
         <div v-else>
             <p>Welcome, {{ admin.username }}</p>
-            <button @click="logout">Logout</button>
             <button @click="giveAllUsersTokens">Give All Users 1000 Tokens</button>
 
             <div class="tabs">
@@ -262,15 +261,15 @@
 
                     <div style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6">
                         <div style="display: flex; align-items: center; gap: 5px">
-                            <div style="width: 20px; height: 20px; background-color: #4488ff"></div>
+                            <div style="width: 20px; height: 20px; background-color: #F3CCE9"></div>
                             Voted randomly
                         </div>
                         <div style="display: flex; align-items: center; gap: 5px">
-                            <div style="width: 0; height: 0; border-left: 10px solid transparent; border-right: 10px solid transparent; border-bottom: 20px solid #44ff88; transform: rotate(180deg)"></div>
+                            <div style="width: 0; height: 0; border-left: 10px solid transparent;  border-right: 10px solid transparent; border-bottom: 20px solid #CFECCF; transform: rotate(180deg)"></div>
                             Voted for Preference
                         </div>
                         <div style="display: flex; align-items: center; gap: 5px">
-                            <div style="width: 20px; height: 20px; border-radius: 50%; background-color: #ff4444"></div>
+                            <div style="width: 20px; height: 20px; border-radius: 50%; background-color: #AECBEF"></div>
                             Voted for something they disliked
                         </div>
                     </div>
@@ -528,14 +527,14 @@ export default {
                 const preference = (user.preference ?? "").toString();
 
                 if (optionText.toLowerCase().includes(preference.toLowerCase())) {
-                    drawStar(x, y, 5, radius, radius / 2, "#44ff88");
+                    drawStar(x, y, 5, radius, radius / 2, "#CFECCF");
                 } else if (Math.random() < user.dislikeProbability) {
                     ctx.beginPath();
                     ctx.arc(x, y, radius, 0, Math.PI * 2);
-                    ctx.fillStyle = "#ff4444";
+                    ctx.fillStyle = "#AECBEF";
                     ctx.fill();
                 } else {
-                    ctx.fillStyle = "#4488ff";
+                    ctx.fillStyle = "#F3CCE9";
                     ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2);
                 }
             });
@@ -797,7 +796,7 @@ export default {
 }
 .tabs button {
     padding: 10px 20px;
-    margin-right: 5px;
+    margin-right: 10px;
     cursor: pointer;
     background-color: #FFF8F0;
     color: #F8BBD0;
@@ -810,7 +809,6 @@ export default {
 }
 
 .quiz-item {
-    border: 1px solid #ccc;
     padding: 10px;
     margin-bottom: 10px;
 }
@@ -830,14 +828,16 @@ export default {
 }
 .users-table th,
 .users-table td {
-    border: 1px solid #ccc;
     padding: 8px;
     text-align: left;
 }
 .users-table th {
-    background-color: #f0f0f0;
+    color: #FFF8F0;
+    background-color: #F8BBD0;
 }
 .users-table tbody tr:nth-child(even) {
-    background-color: #fafafa;
+    color: #FFF8F0;
+    background-color: #F8BBD0;
 }
+
 </style>

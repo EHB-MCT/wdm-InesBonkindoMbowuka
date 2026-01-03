@@ -15,7 +15,6 @@
 					<input type="number" v-model.number="tokensToSpendByUser[quiz.id][rIndex]" placeholder="Tokens to spend" min="1" />
 					<button @click="submitAdminVote(quiz.id, rIndex)">Vote</button>
 					<p>Total Tokens Spent: {{ totalTokens[quiz.id]?.[rIndex] || 0 }}</p>
-					<p>Winning Option: {{ winningOption[quiz.id]?.[rIndex] || "—" }}</p>
 				</div>
 			</div>
 		</section>
@@ -25,6 +24,7 @@
 export default {
 	data() {
 		return {
+			currentUser: null,
 			users: [],
 			activeQuizzes: [],
 			totalTokens: {},
@@ -83,6 +83,7 @@ export default {
 
 			const round = this.activeQuizzes.find((q) => q.id === quizId).rounds[roundIndex];
 			const optionIndex = round.indexOf(option);
+
 			this.currentUser.tokens -= tokens;
 			await fetch("http://localhost:5000/vote", {
 				method: "POST",
@@ -95,6 +96,7 @@ export default {
 					tokensSpent: tokens,
 				}),
 			});
+
 			if (!this.totalTokens[quizId]) this.totalTokens[quizId] = {};
 			if (!this.winningOption[quizId]) this.winningOption[quizId] = {};
 
@@ -140,6 +142,24 @@ export default {
 
 			const data = await res.json();
 			console.log("Vote response:", data);
+
+			if (!res.ok) {
+				console.error("Vote failed:", data.error);
+				return;
+			}
+
+			const savedUser = localStorage.getItem("currentUser");
+			if (!savedUser) return;
+
+			const currentUser = JSON.parse(savedUser);
+			const newVote = { option: optionIndex, tokensSpent };
+			currentUser.VotedFor = currentUser.VotedFor ? [...currentUser.VotedFor, newVote] : [newVote];
+			currentUser.tokens -= tokensSpent;
+
+			localStorage.setItem("currentUser", JSON.stringify(currentUser));
+
+			this.user.tokens = currentUser.tokens;
+			this.user.VotedFor = currentUser.VotedFor;
 		},
 
 		weightedChoice(user, options) {
@@ -235,17 +255,14 @@ export default {
 
 	async mounted() {
 		const saved = localStorage.getItem("currentUser");
-		if (saved) this.currentUser = JSON.parse(saved);
+		if (saved) {
+			this.currentUser = JSON.parse(saved);
+		} else {
+			console.warn("[Quiz] No currentUser in localStorage");
+		}
+
 		await this.fetchUsers();
 		await this.fetchQuizzes();
-
-		for (const quiz of this.activeQuizzes) {
-			quiz.rounds.forEach((_, roundIndex) => {
-				setTimeout(() => {
-					this.simulateVoting(quiz, roundIndex);
-				}, Math.random() * 5000);
-			});
-		}
 	},
 };
 </script>

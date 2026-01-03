@@ -11,7 +11,7 @@ const url = process.env.MONGO_URL;
 const client = new MongoClient(url);
 const { ObjectId } = require("mongodb");
 const bcrypt = require("bcrypt");
-const preferences= ["bright", "horror", "boy", "girl"];
+const preferences= ["bright", "horror", "boyish", "cute"];
 
 let db;
 let Users;
@@ -94,12 +94,22 @@ app.post("/Login", async (req, res) => {
 			return res.status(403).json({ error: "Invalid admin code" });
 		}
 
-		const { _id, money, tokens, role } = user;
-
 		res.json({
 			message: "Login successful",
-			user: { _id, username, money, tokens, role },
+			user: {
+				_id: user._id,
+				username: user.username,
+				money: user.money,
+				tokens: user.tokens,
+				role: user.role,
+				VotedFor: user.VotedFor || [],
+				preference: user.preference,
+				likeProbability: user.likeProbability,
+				dislikeProbability: user.dislikeProbability,
+				spendingProbability: user.spendingProbability,
+			},
 		});
+
 	} catch (err) {
 		console.error("Login error:", err);
 		res.status(500).json({ error: "Server error during login" });

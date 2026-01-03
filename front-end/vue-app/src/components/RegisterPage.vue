@@ -75,13 +75,11 @@ input {
 	padding: 8px;
 	width: 250px;
 	border-radius: 5px;
-	border: 1px solid #ccc;
 }
 
 button {
 	padding: 8px 16px;
-	background-color: #42b983;
-	color: white;
+	background-color: #FFF8F0;
 	border: none;
 	border-radius: 5px;
 	cursor: pointer;
@@ -91,3 +89,6 @@ button {
 	color: red;
 }
 </style>
+
+ background-color: #FFF8F0;
+  color: #F8BBD0
