@@ -89,6 +89,3 @@ button {
 	color: red;
 }
 </style>
-
- background-color: #FFF8F0;
-  color: #F8BBD0
