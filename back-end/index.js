@@ -11,7 +11,7 @@ const url = process.env.MONGO_URL;
 const client = new MongoClient(url);
 const { ObjectId } = require("mongodb");
 const bcrypt = require("bcrypt");
-
+const preference= ["bright", "horror", "boy", "girl"];
 
 let db;
 let Users;
@@ -121,12 +121,18 @@ app.post("/Register", async (req, res) => {
 
 		const hashedPassword = await bcrypt.hash(password, 10); 
 		const role = adminCode === process.env.ADMIN_SECRET ? "admin" : "user";
+		const preferences= preference[Math.floor(Math.random() * preference.length)];
 
 		const newUser = {
 			username,
 			password: hashedPassword,
 			tokens: 100,
 			money: 0,
+			spendingProbability: 0.5,
+			basespeed:4,
+			preferences,
+			likeProbability:0.5,
+			dislikeProbability:0.5,
 			role,
 			VotedFor: [],
 		};

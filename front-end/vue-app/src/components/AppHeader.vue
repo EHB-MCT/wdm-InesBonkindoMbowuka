@@ -46,16 +46,40 @@ export default {
 </script>
 
 <style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Coiny&family=Wix+Madefor+Text:ital,wght@0,400..800;1,400..800&display=swap');
+
 .header {
 	display: flex;
 	justify-content: center;
-	gap: 20px;
-	background-color: #42b983;
+	background-color: #F8BBD0;
 	padding: 10px;
+  font-family: "Wix Madefor Text", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-style: normal;
+  font-size: x-large;
+}
+
+.header nav{
+  display: flex;
+  gap: 200px;
+  align-items: center;
+}
+button{
+  background-color: #FFF8F0;
+  color:#F8BBD0;
+  border: none;
+  border-radius: 20px;
+}
+
+button:hover{
+  background-color: #F8BBD0;
+  color: #FFF8F0;
+  cursor: pointer;
 }
 
 a {
-	color: white;
+	color: #FFF8F0;
 	text-decoration: none;
 	font-weight: bold;
 }

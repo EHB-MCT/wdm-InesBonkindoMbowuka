@@ -299,20 +299,31 @@ export default {
         };
     },
     mounted() {
-        const stored = localStorage.getItem("admin");
-        if (!stored) this.$router.push("/AdminLogin");
-        else {
+        const stored = localStorage.getItem("currentUser");
+        if (!stored){
+            this.$router.push("/Login");
+            return;
+        } 
+
+        const user = JSON.parse(stored);
+
+        if (user.role !== "admin") {
+        this.$router.push("/HomePage");
+        return;
+    }
+        
+       
             this.admin = JSON.parse(stored);
             this.fetchQuizzes();
             this.fetchUsers();
             this.fetchStorePacks();
             this.fetchPurchases();
-        }
+        
     },
     methods: {
         logout() {
             localStorage.removeItem("admin");
-            this.$router.push("/AdminLogin");
+            this.$router.push("/Admindashboard");
         },
 
         async giveAllUsersTokens() {
@@ -776,6 +787,11 @@ export default {
 </script>
 
 <style scoped>
+
+.body{
+    background-color: #FFF8F0;
+}
+
 .tabs {
     margin: 20px 0;
 }
@@ -783,13 +799,14 @@ export default {
     padding: 10px 20px;
     margin-right: 5px;
     cursor: pointer;
-    background-color: #eee;
+    background-color: #FFF8F0;
+    color: #F8BBD0;
     border: none;
     border-radius: 5px 5px 0 0;
 }
 .tabs button.active {
-    background-color: #42b983;
-    color: white;
+    background-color: #F8BBD0;
+    color: #FFF8F0;
 }
 
 .quiz-item {
