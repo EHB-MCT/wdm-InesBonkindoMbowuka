@@ -1,4 +1,5 @@
 Report on pitfalls and flaws. 
+
 The collected data is biased and incomplete. Votes and token spending do not always represent real user preferences and are influenced by randomness and system constraints.
 The visualization is not designed for clarity but for personalization and engagement.
 While visually expressive, it makes the data harder to interpret.
