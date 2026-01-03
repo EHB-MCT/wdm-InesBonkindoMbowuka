@@ -11,7 +11,7 @@ const url = process.env.MONGO_URL;
 const client = new MongoClient(url);
 const { ObjectId } = require("mongodb");
 const bcrypt = require("bcrypt");
-const preference= ["bright", "horror", "boy", "girl"];
+const preferences= ["bright", "horror", "boy", "girl"];
 
 let db;
 let Users;
@@ -121,7 +121,7 @@ app.post("/Register", async (req, res) => {
 
 		const hashedPassword = await bcrypt.hash(password, 10); 
 		const role = adminCode === process.env.ADMIN_SECRET ? "admin" : "user";
-		const preferences= preference[Math.floor(Math.random() * preference.length)];
+		const preference= preferences[Math.floor(Math.random() * preferences.length)];
 
 		const newUser = {
 			username,
@@ -129,8 +129,8 @@ app.post("/Register", async (req, res) => {
 			tokens: 100,
 			money: 0,
 			spendingProbability: 0.5,
-			basespeed:4,
-			preferences,
+			baseSpeed:4,
+			preference,
 			likeProbability:0.5,
 			dislikeProbability:0.5,
 			role,
@@ -138,7 +138,7 @@ app.post("/Register", async (req, res) => {
 		};
 
 		await Users.insertOne(newUser);
-
+		
 		res.json({
 			message: "User registered successfully",
 			user: { username: newUser.username, tokens: newUser.tokens, role: newUser.role },
