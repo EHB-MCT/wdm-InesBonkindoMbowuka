@@ -6,6 +6,7 @@ While visually expressive, it makes the data harder to interpret.
 The system relies mainly on each user’s top three voted words to shape future quizzes.
 This creates feedback loops that reinforce behavior and encourage continued participation and spending through fear of missing out.
 This project shows how limited and imperfect data can still be used to influence user behavior and could easily be misused in a real-world context.
+
 I learned how to track and visualize individual user behavior, manage tokens, and simulate engagement.
 It was fun seeing how each user interacts with the app, which shows how data reveals preferences and patterns.
 It also highlighted the ethical implications of using personal data and the line between personalization and manipulation.
