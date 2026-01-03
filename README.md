@@ -12,21 +12,21 @@ It also highlighted the ethical implications of using personal data and the line
 
 Sources.
 
-watch: [Options: State | Vue.js](https://vuejs.org/api/options-state.html#watch) 
+watch: [Options: State | Vue.js](https://vuejs.org/api/options-state.html#watch) Used to reactively track changes in user votes
 
-methods: [Vue Methods](https://www.w3schools.com/vue/vue_methods.php)
+methods: [Vue Methods](https://www.w3schools.com/vue/vue_methods.php) Used throughout to define functions handling voting, fetching users/quizzes, and drawing the canvas.
 
-computed: [Computed Properties | Vue.js](https://vuejs.org/guide/essentials/computed.html)
+computed: [Computed Properties | Vue.js](https://vuejs.org/guide/essentials/computed.html) Used to derive dynamic values
 
-.some(): [JavaScript Array some() Method](https://www.w3schools.com/jsref/jsref_some.asp)
+.some(): [JavaScript Array some() Method](https://www.w3schools.com/jsref/jsref_some.asp) Used to check if a user’s vote matches any of their preferred words.
 
-mounted: [(lifecycle hooks) Lifecycle Hooks | Vue.js](https://vuejs.org/guide/essentials/lifecycle.html)
+mounted: [(lifecycle hooks) Lifecycle Hooks | Vue.js](https://vuejs.org/guide/essentials/lifecycle.html) Used to fetch initial user and quiz data and initialize the canvas on page load.
 
-reactive states: [Reactivity Fundamentals | Vue.js](https://vuejs.org/guide/essentials/reactivity-fundamentals.html)
+reactive states: [Reactivity Fundamentals | Vue.js](https://vuejs.org/guide/essentials/reactivity-fundamentals.html) Used for userVotes, tokensToSpendByUser, totalTokens, and other reactive data objects.
 
-canvas.getContext(“2d”) [CanvasRenderingContext2D - Web APIs | MDN](https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D)
+canvas.getContext(“2d”) [CanvasRenderingContext2D - Web APIs | MDN](https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D) Used to draw personalized visualization for each user’s votes.
 
-.includes [Array.prototype.includes() - JavaScript | MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/includes)
+.includes [Array.prototype.includes() - JavaScript | MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/includes) Used to match user preferences with voted options when rendering the canvas.
 
 chatgpt chat: https://chatgpt.com/share/695967fe-2ebc-8001-a650-624a805ed2b4 
 
