@@ -1,3 +1,7 @@
+Project description.
+
+This project is an application where an admin can create quizzes, and users vote on quiz options using tokens. Users can earn or purchase tokens in the store, and their votes are tracked and visualized. The system captures user behavior and preferences, which can later be used to tailor quizzes and influence engagement.
+
 Report on pitfalls and flaws. 
 
 The collected data is biased and incomplete. Votes and token spending do not always represent real user preferences and are influenced by randomness and system constraints.
@@ -10,6 +14,28 @@ This project shows how limited and imperfect data can still be used to influence
 I learned how to track and visualize individual user behavior, manage tokens, and simulate engagement.
 It was fun seeing how each user interacts with the app, which shows how data reveals preferences and patterns.
 It also highlighted the ethical implications of using personal data and the line between personalization and manipulation.
+
+Running the Project Locally
+
+Clone or download the project folder to your computer.
+
+Create a .env file based on .env.template and fill in any required settings.
+
+Start the project by opening a terminal/command prompt in the project folder and running:
+
+docker compose up --build
+
+Open the app in your browser:
+
+Frontend: http://localhost:8080
+
+Backend/API: http://localhost:5000
+
+Use the app:
+
+Admin: create quizzes, edit store, view users, see top voted words.
+
+Users: vote with tokens and see personalized visualizations.
 
 Sources.
 
