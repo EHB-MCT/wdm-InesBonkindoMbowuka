@@ -11,6 +11,7 @@ It was fun seeing how each user interacts with the app, which shows how data rev
 It also highlighted the ethical implications of using personal data and the line between personalization and manipulation.
 
 Sources.
+
 watch: [Options: State | Vue.js](https://vuejs.org/api/options-state.html#watch)
 methods: [Vue Methods](https://www.w3schools.com/vue/vue_methods.php)
 computed: [Computed Properties | Vue.js](https://vuejs.org/guide/essentials/computed.html)
